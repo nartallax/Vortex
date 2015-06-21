@@ -367,7 +367,7 @@ class dbEntity {
 	}
 	private function rectifyInput(&$arr, $fields){ 		// set not defined fields to defaults
 		$this->applyInTransforms($arr);
-		$this->rectifyInputFields(&$arr, $fields);
+		$this->rectifyInputFields($arr, $fields);
 		return $arr;
 	}
 	private function rectifyOutput(&$arr, $fields){
