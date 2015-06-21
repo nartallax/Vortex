@@ -1,0 +1,33 @@
+.deletable-item-list ul {
+	/*list-style-type: none;*/
+	padding: 0px;
+	margin: 0px;
+}
+
+.deletable-item-list input {
+	display: inline;
+	position: relative;
+	top: 1px;
+}
+
+.deletable-item-list li > p {
+	display: inline;
+	line-height: 20px;
+	cursor: default;
+	margin-left: 5px;
+}
+
+.deletable-item-list > p {
+	text-decoration: underline;
+	margin: 0px 0px 3px 3px;
+}
+
+.deletable-item-list > .disabled {
+	cursor: default;
+	color: #868686;
+}
+
+.deletable-item-list > .enabled {
+	cursor: pointer;
+	color: #000;
+}

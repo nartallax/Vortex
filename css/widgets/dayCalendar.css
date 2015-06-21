@@ -1,0 +1,91 @@
+.day-calendar {
+	width: 170px;
+	background: #ffffff;
+}
+
+.day-calendar .header {
+	height: 25px;
+	width:100%;
+	border: 1px solid #aaaaaa;
+	border-radius: 3px;
+	background: #D1D1D1;
+	background: linear-gradient(to bottom, #e0e0e0 0%, #cccccc 100%);
+	position: relative;
+	left:0px;
+	right: 0px;
+}
+
+.day-calendar .dec-month {
+	position:absolute;
+	cursor:pointer;
+	top:7px;
+	left:7px;
+}
+
+.day-calendar .inc-month {
+	position:absolute;
+	cursor:pointer;
+	top:7px;
+	right:7px;
+}
+
+.day-calendar .month-name-container {
+	position:absolute;
+	top:7px;
+	width: 100%;
+	text-align:center;
+	
+	font-size: 13px;
+	font-weight:bold;
+}
+
+.day-calendar .month-table {
+	border-collapse: separate;
+}
+
+.day-calendar .month-table.selectable td {
+	cursor: pointer;
+}
+
+.day-calendar .month-table td {
+	padding: 0px;
+}
+
+.day-calendar .day-cell {
+	width: 20px;
+	height: 20px;
+	border: 1px solid #D3D3D3;
+	background: #EDEDED;
+}
+
+.day-calendar .dow-cell {
+	width: 20px;
+	height: 15px;
+	font-size: 11px;
+	font-weight: bold;
+	border: 0px;
+}
+
+.day-calendar .day-cell.empty {
+	background: none;
+	border: 0px;
+	height: 22px;
+}
+
+.day-calendar .day-cell.today {
+	background: none;
+	border: 1px solid #FCEFA1;
+	background: #ffffff;
+}
+
+.day-calendar .day-cell.selected {
+	background: none;
+	border: 1px solid #aaaaaa;
+	background: #ffffff;
+}
+
+.day-calendar .day-cell.empty,
+.day-calendar .day-cell.selected,
+.day-calendar .dow-cell {
+	cursor: default!important;
+}

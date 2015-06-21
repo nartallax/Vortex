@@ -1,0 +1,30 @@
+.domain-input {
+	display: inline-block;
+	position: relative;
+}
+
+.domain-input > input {
+	padding: 1px 0px;
+	border: 1px solid #999;
+	height: 15px;
+	width: 100%;
+}
+
+.domain-input > select {
+	position:absolute;
+	top:100%;
+	left:0px;
+	width:100%;
+	
+	overflow:hidden;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	text-indent: 1px;
+	text-overflow: '';
+	
+	z-index:10;
+}
+
+.domain-input > select::-ms-expand {
+	display: none;
+}

@@ -1,0 +1,136 @@
+body, html {	
+	height: 100%;
+	width: 100%;
+	display: block;
+	
+	position: absolute;
+	top:0px;
+	bottom:0px;
+	left:0px;
+	right:0px;
+	
+	padding: 0px;
+	margin: 0px;
+	border: 0px;
+}
+
+.popup {
+	width: 0px;
+	height: 0px;
+	
+	position: static;
+}
+
+.popup .background {
+	background-color: #555;
+	opacity: 0.5;
+	
+	position: absolute;
+	top:0px;
+	bottom:0px;
+	left:0px;
+	right:0px;
+	
+	padding: 0px;
+	margin: 0px;
+	border: 0px;
+}
+
+.popup .body { /* самый старший тег собственно окна */ 
+	border-radius: 5px;
+	border: 1px solid #555;
+	background-color: #ffffff;
+	position: absolute;
+}
+
+.popup .resize-inner { /* тег внутри body, содержащий в себе теги "краев" окна, за которые можно тянуть для ресайза */
+	display: block; 
+	
+	position: absolute;
+	top: 7px;
+	bottom: 7px;
+	right: 7px;
+	left: 7px;
+}
+
+.popup .header { /* тег заголовка. находится либо внутри resize-inner, либо, если попап не ресайзится, внутри самого body */
+	border: 0px;
+	border-bottom: 1px solid #ccc;
+	
+	font-size: 26px;
+	text-align: center;
+	white-space: nowrap;
+	
+	overflow: hidden;
+	position: absolute;
+	height: 30px;
+	left: 20px;
+	right: 20px;
+}
+
+.popup .header.movable { /* тег заголовка, если его можно перемещать */
+	cursor: move;
+}
+
+.popup .terminal-container { /* обертка непосредственно над переданным тегом; содержится рядом с хедером */
+	position: absolute;
+	top:30px;
+	bottom:0px;
+	left:0px;
+	right:0px;
+}
+
+.popup .resize-left, 
+.popup .resize-right {
+	position: absolute;
+	width: 7px;
+	height: 100%;
+} 
+
+.popup .resize-top, 
+.popup .resize-bottom {
+	position: absolute;
+	height: 7px;
+	width: 100%;
+} 
+
+.popup .resize-top-left,
+.popup .resize-top-right,
+.popup .resize-bottom-left,
+.popup .resize-bottom-right {
+	position: absolute;
+	height: 7px;
+	width: 7px;
+}
+
+.popup .resize-left 		{ cursor: w-resize; 	left:0px;				top:0px;	bottom:0px;	}
+.popup .resize-right 		{ cursor: e-resize; 				right:0px;	top:0px;	bottom:0px;	}
+.popup .resize-top 			{ cursor: n-resize; 	left:0px;	right:0px;	top:0px;				}
+.popup .resize-bottom 		{ cursor: s-resize; 	left:0px;	right:0px;				bottom:0px;	}
+.popup .resize-top-left		{ cursor: nw-resize;	left:0px;				top:0px;				}
+.popup .resize-top-right	{ cursor: ne-resize;				right:0px;	top:0px;				}
+.popup .resize-bottom-left	{ cursor: sw-resize; 	left:0px;							bottom:0px;	}
+.popup .resize-bottom-right	{ cursor: se-resize;				right:0px;				bottom:0px;	}
+
+.popup .close-button {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	
+	cursor: pointer;
+
+	width: 13px;
+	height: 13px;
+	background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAANCAYAAABy6+R8AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuM4zml1AAAACoSURBVChThZLrDcMgDIS9SjsK3Y0BEPCD3Vq1k6R3yDxqaGLpFLDv4+EgjJyzTyk9Qwi3mjCB+h31F30t4aFD9bYgcgQ+k8cLd5gSFSylVBBjCxz0Cw00mgKNzgLQOAnBjcFqOfoVuAItYoyPDUA5tfwGCsulJ/Xm9EDyDGgaICY7gN10+u15+iqIwfKf2qVp4Hyu08+dTl/EpqvjKXGFf23VHfXtiXwBaZxDvZ+E+qYAAAAASUVORK5CYII=');
+}
+
+.popup .resize-inner .close-button{
+	top: -2px;
+	right: -2px;
+}
+
+.popup .alert * {
+	font-size: 22px;
+	text-align: center;
+	word-wrap: break-word;
+}

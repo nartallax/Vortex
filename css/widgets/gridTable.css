@@ -1,0 +1,15 @@
+.grid-table,
+.grid-table .grid-table-main {
+	width:100%;
+}
+
+.grid-table .header-container{
+	width: 100%;
+}
+
+.grid-table .header{
+}
+
+.grid-table .grid-table-main td {
+	border: 1px solid #999;
+}

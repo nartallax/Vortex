@@ -1,0 +1,106 @@
+.week-timetable {
+}
+
+.week-timetable table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.week-timetable td,
+.week-timetable th {
+	border: 1px solid #999;
+}
+
+.week-timetable th {
+	background-color: #f2f2f2;
+	
+	padding: 5px 2px;
+	height: 40px;
+	
+	font-weight: normal;
+	font-size: 13px;
+}
+
+.week-timetable .split-switch-wrap {
+	margin-bottom: 5px;
+}
+
+.week-timetable .split-switch-button {
+	display: inline;
+	text-decoration: underline;
+	cursor: pointer;
+	color: #000000;
+	font-size: 12px;
+}
+.week-timetable .split-hint {
+	display: inline;
+	color: #949494;
+	font-size: 12px;
+	margin-left: 5px;
+}
+
+.week-timetable .week-tab-group {
+	border-bottom: 1px solid black;
+	margin-bottom: 5px;
+}
+
+.week-timetable .week-tab {
+	background-color: #f2f2f2;
+	display:inline-block;
+	
+	cursor: pointer;
+	text-align: center;
+	padding: 10px 30px;
+}
+
+.week-timetable .week-tab.active-tab {
+	background-color: #ffffff;
+	border: 1px solid #000000;
+	border-bottom: 0px;
+	
+	position: relative;
+	top: 1px;
+}
+
+.week-timetable .value-selector-wrap {
+	border: 1px solid #000000;
+	background: #ffffff;
+	
+	width: 19px;
+}
+.week-timetable .value-selector-cell {
+	width: 15px;
+	height: 15px;
+	border: 1px solid #000000;
+	margin: 1px;
+}
+
+.week-timetable *[data-value="1"]		{ background-color: #00ff00; }
+.week-timetable *[data-value="0"]		{ background-color: #ffffff; }
+.week-timetable *[data-value="-1"]		{ background-color: #ffff00; }
+.week-timetable *[data-value="-2"]		{ background-color: #ff0000; }
+.week-timetable *[data-value="true"]	{ background-color: #60FFDF; }
+.week-timetable *[data-value="false"]	{ background-color: #C1BFBA; }
+.week-timetable .cell-selected 			{ background-color: #94B7EF; }
+
+.week-timetable.tiny td,
+.week-timetable.tiny th {
+	width: 15px;
+	height: 15px;
+	padding: 2px;
+	font-size:10px;
+}
+
+.week-timetable.tiny .split-switch-wrap { 
+	display:none; 
+}
+
+.week-timetable.tiny .week-tab-group {
+	border: 0px;
+	margin-bottom: 0px;
+}
+
+.week-timetable.tiny .week-tab {
+	font-size: 10px;
+	padding: 5px 10px;
+}

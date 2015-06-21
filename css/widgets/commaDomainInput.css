@@ -1,0 +1,27 @@
+.comma-domain-input {
+	display: inline-block;
+	position: relative;
+}
+
+.comma-domain-input input {
+	width: 100%;
+}
+
+.comma-domain-input select {
+	position:absolute;
+	top:100%;
+	left:0px;
+	width:100%;
+	
+	overflow:hidden;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	text-indent: 1px;
+	text-overflow: '';
+	
+	z-index:10;
+}
+
+.comma-domain-input select::-ms-expand {
+	display: none;
+}

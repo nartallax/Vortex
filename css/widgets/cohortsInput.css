@@ -1,0 +1,28 @@
+.cohorts-input .cohort-row {
+	position: relative;
+	height: 25px;
+}
+
+.cohorts-input .cohort-remove-button {
+	position: absolute;
+	right: 0px;
+	width: 70px;
+	top: 2px;
+	bottom: 2px;
+}
+
+.cohorts-input .cohort-rate-input {
+	position:absolute;
+	right: 75px;
+	width: 50px;
+	top: 2px;
+	bottom: 2px;
+}
+
+.cohorts-input .cohort-id-input {
+	position:absolute;
+	right: 135px;
+	left: 0px;
+	top: 2px;
+	bottom: 2px;
+}

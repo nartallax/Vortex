@@ -1,0 +1,7 @@
+.drop-site {
+	
+}
+
+.drop-site.highlighted {
+	box-shadow: inset 0px 0px 100px #fff;
+}
