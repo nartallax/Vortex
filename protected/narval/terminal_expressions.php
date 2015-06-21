@@ -61,7 +61,7 @@ class KeySpecialValue extends Expression {
 	public function simplify() { return $this; }
 }
 
-// специальное значение - ключ: имеет значение, равное текущему проверяемому
+// специальное значение - текущее: имеет значение, равное текущему проверяемому
 // не имеет смысла в контексте отдельного выражения, не включенного в паттерн
 class MeSpecialValue extends Expression {
 	public function addOp($op) { throw new Exception('Special value me could not have operations.'); }
@@ -72,10 +72,13 @@ class MeSpecialValue extends Expression {
 	public function simplify() { return $this; }
 }
 
+interface iFunc {
+	static function getName();
+}
+
 // функция - значение зависит от значений операндов и некоего алгоритма
 // (все функции определяются не здесь)
-abstract class Func extends Expression {
-	abstract public static function getName();
+abstract class Func extends Expression implements iFunc{
 	protected function argCount($lower, $upper){
 		$result = count($this->data);
 		if($result < $lower) throw new Exception('Unexpected argument count for function ' . static::getName() . ': expected at least ' . $lower. ', got ' . $result . '.');
