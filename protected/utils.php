@@ -65,7 +65,8 @@ function getFilesRecursive($path, $ext = null){
 	closedir($dirHandle);
 	
 	sort($result);
-	
+	sort($dirs);
+
 	foreach($dirs as $dir) 
 		$result = array_merge($result, getFilesRecursive($dir, $ext));
 	return $result;

@@ -21,9 +21,8 @@ var conjure = (function(){
 				
 				listener = function(){
 					if(request.readyState !== 4) return; // запрос не завершился, пока
-					sendRequest.fire('end', {name: apiFunctionName, data: data});
-					if(request.status !== 200) return onFail.call(request, apiFunctionName, data);
-					
+					sendRequest.fire('end', {name: apiFunctionName, data: data, status: request.status});
+					if(parseInt(request.status) !== 200) return onFail.call(request, apiFunctionName, data);
 					var resultData, logged = false;
 					try {
 						resultData = JSON.parse(request.responseText);

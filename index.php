@@ -16,7 +16,7 @@
 		<script type="text/javascript"> var browserIsCompatible = true; </script>
 		<script type="text/javascript">
 			/*<![CDATA[*//*---->*/
-			try { 
+			try {
 			<?php
 				$files = getFilesRecursive('./js', '.js');
 				foreach($files as $file){

@@ -23,7 +23,16 @@
 		global $CONFIG;
 		global $connectionObject;
 		global $transactionIsOpen;
-		
+
+		$connString = 'host=' . $CONFIG['db']['host'] . 
+			' user=' . $CONFIG['db']['user'] . 
+			' dbname=' . $CONFIG['db']['name'] . 
+			' port=' . $CONFIG['db']['port'] . 
+			' connect_timeout=' . $CONFIG['db']['connect_timeout'] . 
+			" options='--client_encoding=UTF8'";
+
+		if($CONFIG['db']['password']) $connString .= ' password=\'' . $CONFIG['db']['password'] . '\'';
+
 		$connectionObject = pg_connect(
 			'host=' . $CONFIG['db']['host'] . 
 			' user=' . $CONFIG['db']['user'] . 

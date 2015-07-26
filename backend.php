@@ -1,6 +1,14 @@
 <?php
 	mb_internal_encoding('UTF-8');
 	
+	// выводить ошибки, да побольше
+	set_error_handler(function($errno, $errstr, $errfile, $errline, array $errcontext) {
+		if (error_reporting() === 0) return false;
+		throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+	});
+	error_reporting(-1);
+	ini_set('display_errors', 'On');
+
 	/*
 	
 	TODO:
@@ -17,15 +25,6 @@
 		пофиксить сбор: преподаватель Фамилия И.О., комната &nbsp;, Неопознанное Строение, слоты на весь день
 	
 	*/
-	
-	require_once('./protected/utils.php');
-	require_once('./protected/config.php');
-	require_once('./protected/session.php');
-	require_once('./protected/benchmark.php');
-	require_once('./protected/keccak.php');
-	require_once('./protected/db.php');
-	require_once('./protected/narval/narval.php');
-	require_once('./protected/packer.php');
 
 	$sessionData = null;
 	$sessionName = null;
@@ -52,7 +51,7 @@
 	function apiFunctionExists($api, $function){ return file_exists("./protected/api/$api/$function.php"); }
 	function validateApiInputData($data){ return Narval\check(getApiDataTemplate(), $data); }
 	function invokeApiFunction($data){ return calledApiFunction($data); }
-	
+
 	function getTargetApi($loggedIn, $isAdmin, $apiFunctionName){
 		$haveFunctionInFree = apiFunctionExists('free', $apiFunctionName);
 		$haveFunctionInProtected = apiFunctionExists('protected', $apiFunctionName);;
@@ -141,13 +140,28 @@
 				
 		return $apiFunctionName;
 	}
-	
+
+	try{
+		require_once('./protected/config.php');
+		require_once('./protected/utils.php');
+		require_once('./protected/session.php');
+		require_once('./protected/benchmark.php');
+		require_once('./protected/keccak.php');
+		require_once('./protected/narval/narval.php');
+		require_once('./protected/packer.php');
+		require_once('./protected/db.php');
+	} catch(Exception $e){
+		apiResponseFail($e->getMessage());
+		echo("\n" . $e->getMessage() . "\nat " . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
+	}
+
 	// Самая Главная Функция
 	function processHttpRequest(){
 		global $sessionData;
 		global $packedCommunication;
 		
 		try{
+
 			if(isset($_GET['packed']) && $_GET['packed'] === 'true')
 				$packedCommunication = true;
 		
@@ -161,21 +175,12 @@
 				throw new Exception('not_validated');
 			return apiResponseSuccess(invokeApiFunction($apiInputData));
 		} catch(Exception $e){
-			// uncomment this to disable additional verbose
-			//return apiResponseFail($e->getMessage());
 			apiResponseFail($e->getMessage());
-			echo("\n" . $e->getMessage() . "\nat " . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
-			return;
+			if($CONFIG['debug']) {
+				echo("\n" . $e->getMessage() . "\nat " . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
+			}
 		}
 	}
-	
-	// выводить ошибки, да побольше
-	set_error_handler(function($errno, $errstr, $errfile, $errline, array $errcontext) {
-		if (error_reporting() === 0) return false;
-		throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-	});
-	error_reporting(-1);
-	ini_set('display_errors', 'On');
 	
 	// фпиред
 	processHttpRequest();
