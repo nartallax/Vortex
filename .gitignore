@@ -1,0 +1,4 @@
+/observations/*
+!/observations/README
+/protected/sessions/*
+!/protected/sessions/README
