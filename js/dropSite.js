@@ -1,7 +1,14 @@
 var dropSite = (function(){
 
+	var mouseIsCaptured = false;
+
 	var dropSite = function(node){
 		
+		if(!mouseIsCaptured){
+			addListener('mousemove', testMouseOver);
+			mouseIsCaptured = true;
+		}
+
 		node.className += ' drop-site';
 		node.isDropSite = true;
 		
@@ -49,10 +56,6 @@ var dropSite = (function(){
 	var getContent = function(){
 		return this.children[0];
 	}
-	
-	setTimeout(function(){
-		addListener('mousemove', testMouseOver);
-	}, 1);
 	
 	return dropSite;
 
