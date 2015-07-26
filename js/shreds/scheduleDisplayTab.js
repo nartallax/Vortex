@@ -117,6 +117,7 @@ shred.define({
 			}
 			var ourLectors = db.data.lector.flfield('is_external', false).map(function(l){ return true });
 			var lectorContainer = el('lector_fast_links_container');
+
 			var onLectorClick = function(){
 				var params = pageHash.getParams();
 				params.type = 'lector';
@@ -138,6 +139,8 @@ shred.define({
 				roomContainer.appendChild(tag('span', '', '', ' '));
 			});
 			
+			clarr(lectorContainer.children).each(function(c){ c.innerHTML = ''; })
+
 			ourLectors
 				.map(function(l, k){return db.data.lector[parseInt(k)];})
 				.toArr()
