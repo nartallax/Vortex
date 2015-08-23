@@ -175,50 +175,6 @@ create table schedules(
 	note int references notes(id) on delete set null
 );
 
-/* события (одноразовые встречи и т.п.) */
-drop table if exists events cascade;
-create table events (
-	id serial primary key,
-	
-	name varchar[255] not null,
-	time_start bigint not null,
-	time_end bigint not null,
-	
-	schedule int references schedules(id) on delete cascade,
-	note int references notes(id) on delete set null
-);
-
-/* наборы изменений */
-drop table if exists changesets cascade;
-create table changesets(
-	id serial primary key,
-	
-	application_date int not null, /* день с начала ввода расписания, в котором начинает действовать данное изменение */
-	is_external boolean not null, /* загружен ли из внешнего источника */
-	is_published boolean not null, /* видим ли набор изменений непосвященным */
-	
-	schedule int references schedules(id) on delete cascade,
-	note int references notes(id) on delete set null
-);
-
-/* изменения */
-drop table if exists changes cascade;
-create table changes(
-	id serial primary key,
-	
-	type int not null, /* тип изменения (поле, которое изменилось) */
-	target int references lessons(id) on delete cascade,
-	subtarget int, /* some additional data, usually cohort */
-	old_value int, /* old and new value of selected property */
-	new_value int,
-	other_data varchar(255), /* not oftenly used */
-	
-	changeset int references changesets(id) on delete cascade,
-	proposer int references lectors(id) on delete cascade, /* автор предложения */
-	creation_date bigint not null default extract('epoch' from CURRENT_TIMESTAMP)::bigint, /* дата внесения предложения */
-	note int references notes(id) on delete set null
-);
-
 /*
 	===== РАСПИСАНИЕЗАВИСИМЫЕ ВТОРИЧНЫЕ СУЩНОСТИ =====
 */
@@ -296,6 +252,50 @@ create table cohorts_on_lessons(
 	note int references notes(id) on delete set null
 );
 
+/* события (одноразовые встречи и т.п.) */
+drop table if exists events cascade;
+create table events (
+	id serial primary key,
+	
+	name varchar[255] not null,
+	time_start bigint not null,
+	time_end bigint not null,
+	
+	schedule int references schedules(id) on delete cascade,
+	note int references notes(id) on delete set null
+);
+
+/* наборы изменений */
+drop table if exists changesets cascade;
+create table changesets(
+	id serial primary key,
+	
+	application_date int not null, /* день с начала ввода расписания, в котором начинает действовать данное изменение */
+	is_external boolean not null, /* загружен ли из внешнего источника */
+	is_published boolean not null, /* видим ли набор изменений непосвященным */
+	
+	schedule int references schedules(id) on delete cascade,
+	note int references notes(id) on delete set null
+);
+
+/* изменения */
+drop table if exists changes cascade;
+create table changes(
+	id serial primary key,
+	
+	type int not null, /* тип изменения (поле, которое изменилось) */
+	target int references lessons(id) on delete cascade,
+	subtarget int, /* some additional data, usually cohort */
+	old_value int, /* old and new value of selected property */
+	new_value int,
+	other_data varchar(255), /* not oftenly used */
+	
+	changeset int references changesets(id) on delete cascade,
+	proposer int references lectors(id) on delete cascade, /* автор предложения */
+	creation_date bigint not null default extract('epoch' from CURRENT_TIMESTAMP)::bigint, /* дата внесения предложения */
+	note int references notes(id) on delete set null
+);
+
 /*
 	===== ТАБЛИЦЫ ХРАНЕНИЯ СОБРАННЫХ ДАННЫХ =====
 */
@@ -357,7 +357,7 @@ insert into looting_info(value, is_regexp) values
 	('185400', false), /*Швембергер*/ 
 	('138571', false), /*Бурлов*/
 	('186260', false), /*Логдачева*/
-	('152010', false), /*Сергеева*/
+	('165444', false), /*Сергеева*/
 	('134632', false), /*Ушакова*/
 	('130646', false), /*Хайдаров*/
 	('202626', false); /*Семеновых*/
@@ -391,7 +391,7 @@ insert into lectors(surname, name, patronym, password, note, looting_info, salt)
 	('Сысоева','Екатерина','Кирилловна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='130837' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Ушакова','Ольга','Борисовна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='134632' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Хайдаров','Геннадий','Гасимович','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='130646' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
-	('Швембергер','Сергей','Викторович','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='185400' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117');
+	('Швембергер','Сергей','Викторович','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='185400' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Семеновых','Юлия','Владимировна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='202626' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117');
 
 insert into slots(start_time, duration, note) values 
