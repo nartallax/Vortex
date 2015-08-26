@@ -948,82 +948,133 @@ var renderTable = function(data){
 	return resultTable;
 }
 var renderLessonGrid = function(data, getTDforLessons){
+	
+	var dayOfLesson = function(d){ return slot.breakSimple(db.data.slot[d.slots.first()]).day };
+	var haveSplitLessonsIn = function(lessons){
+		return lessons
+			.divide(function(l){dayOfLesson})
+			.spawn(function(res, ls){ 
+			return res || !ls.spawn(function(rs, l){ return rs || slotsIsSymmetrical(l)}, false)
+			}, false);
+	}
+	var slotsIsSymmetrical = function(sids){
+		if((sids.length % 2) !== 0) return false;
+		
+		var syms = {};
+		sids.map(resolveFunction(db.data.slot))
+			.map(function(s){ return s.start_time % secondsInWeek })
+			.each(function(s){ syms[s] = !syms[s]; });
+			
+		return !syms.spawn(function(r, s){ return r || s }, false);
+	}
+	var chunkedToRows = function(chunked){
+		var result = [tag('tr')];
+		
+		days.each(function(day, dayNum){
+			
+			var getDummyTd = function(colspan){ 
+				return tag('td', '', 'lesson-grid-table-data-cell', '', {colspan: colspan || colsAtDay[dayNum]});
+			}
+		
+			dayNum = parseInt(dayNum);
+			
+			var dayChunk = chunked[dayNum] || {odd:[], even:[], both:[]},
+				unsymLen = max(dayChunk.odd.length, dayChunk.even.length);
+				neededRows = unsymLen + dayChunk.both.length,
+				rowNum = 0;
+			while(neededRows > result.length) {
+				var newTr = tag('tr'), needTds = dayNum;
+				result.push(newTr);
+				while(needTds-->0) newTr.appendChild(getDummyTd());
+			}
+			
+			dayChunk.both.each(function(l){
+				var td = getTDforLessons([l]);
+				td.setAttribute('colspan', colsAtDay[dayNum]);
+				result[rowNum++].appendChild(td);
+			});
+			
+			for(var unsymNum = 0; unsymNum < unsymLen; unsymNum++){
+				var tr = result[rowNum++];
+				var tdOdd = dayChunk.odd[unsymNum]? getTDforLessons([dayChunk.odd[unsymNum]]): getDummyTd(1),
+					tdEven = dayChunk.even[unsymNum]? getTDforLessons([dayChunk.even[unsymNum]]): getDummyTd(1);
+				
+				tr.appendChild(tdEven);
+				tr.appendChild(tdOdd);
+			}
+
+			while(rowNum < result.length) result[rowNum++].appendChild(getDummyTd());
+			
+		});
+		
+		return result;
+			
+	};
+	
+	
 	var table = tag('table','width:100%;margin-top:20px', 'arial'), tr,
 		days = slot.days();
 		
-	data = data.each(function(l){ delete l.id; }).uniq().each(function(l, k){ l.id = parseInt(k); });
+	data = data.cloneDeep().each(function(l){ delete l.id; }).uniq().each(function(l, k){ l.id = parseInt(k); });
 	data = lesson.glueOddEven(lesson.glueCohorts(data)).each(lesson.mergeNotes);
+	data = data.fl(function(d){ return d.slots.length > 0 });
+	
+	var dataByDays = data.divide(dayOfLesson);
+	
+	console.log(dataByDays.map(function(d){ return d.map(lesson.toString) }));
+	
+	var haveSplitAtDay = dataByDays.map(function(v){ return haveSplitLessonsIn(v) });
+	var colsAtDay = haveSplitAtDay.map(function(v){ return v? 2: 1 });
 		
 	table.appendChild(tr = tag('tr'));
 	tr.appendChild(tag('th', null, null, 'Пара'));
 	tr.appendChild(tag('th', null, null, 'Время'));
-	tr.appendChild(tag('th', null, null, 'Неделя'));
-	days.each(function(d){ tr.appendChild(tag('th', null, 'lesson-grid-table-day-cell', d)) });
+	//tr.appendChild(tag('th', null, null, 'Неделя'));
+	days.each(function(d, num){ tr.appendChild(tag('th', null, 'lesson-grid-table-day-cell', d, {colspan: colsAtDay[num]})) });
 	
-	var filterByDay = function(lessons, dayNum){
-		return lessons.fl(function(l){
-			if(l.slots.isEmpty()) return false;
-			return slot.breakSimple(db.data.slot[l.slots.first()]).day === dayNum;
-		});
-	}
+	var haveSplitLessons = haveSplitLessonsIn(data);
 	
-	var filterByOdd = function(lessons, odd){
-		return lessons.fl(function(l){
-			return l.slots.spawn(function(res, s){
-				return res || slot.breakSimple(db.data.slot[s]).odd === odd;
-			}, false);
-		});
-	}
-	
-	var generateDayRows = function(lessons, firstRow, forOdd, forEven){
-		var rowCount = 1, daysData = days.spawn(function(res, v, num){
-			res[num] = filterByDay(lessons, parseInt(num)).toArr();
-			rowCount = max(rowCount, res[num].length);
-			return res;
-		}, {});
+	if(haveSplitLessons){
+		table.appendChild(tr = tag('tr'));
+		tr.appendChild(tag('th'));
+		tr.appendChild(tag('th'));
 		
-		var result = [];
-		daysData.each(function(lessons, num){ firstRow.appendChild(getTDforLessons(lessons)); });
-		
-		return result;
-	}
-	
-	var getMaxLessonsPerDay = function(lessons){
-		return days.spawn(function(res, v, num){ return max(res, filterByDay(lessons, parseInt(num)).size()); }, 1);
+		days.each(function(d, num){ 
+			if(haveSplitAtDay[num]){
+				tr.appendChild(tag('th', '', '', 'чет'));
+				tr.appendChild(tag('th', '', '', 'нечет'));
+			} else tr.appendChild(tag('th'));
+		});
 	}
 	
 	db.data.slot.fl(function(s){ return s.start_time < secondsInDay}).each(function(s){
 	
-		var dayNum = slot.breakSimple(s).day, numInDay = slot.numberInDay(s), lessons = data.fl(function(l){ 
-			if(l.slots.isEmpty()) return false;
-			return slot.numberInDay(db.data.slot[l.slots.first()]) === numInDay;
-		}).toArr();
-		
-		var oddLessons = filterByOdd(lessons, true), evenLessons = filterByOdd(lessons, false),
-			haveOdd = oddLessons.length > 0, haveEven = evenLessons.length > 0,
-			haveSeparate = lessons.spawn(function(res, l){ return res || l.slots.length !== 2 }, false),
+		var numInDay = slot.numberInDay(s), 
+			timeStr = slot.break(null, s).str.time,
+			lessons = data.fl(function(l){ return slot.numberInDay(db.data.slot[l.slots.first()]) === numInDay; }).toArr(),
+			chunked = lessons
+				.divide(dayOfLesson)
+				.map(function(ls){
+					return ls.map(function(l){
+						l.isSymmetrical = slotsIsSymmetrical(l.slots);
+						l.isOdd = slot.breakSimple(db.data.slot[l.slots.first()]).odd
+						return l;
+					});
+				})
+				.map(function(ls){
+					return {
+						odd: ls.fl(function(l){ return !l.isSymmetrical && l.isOdd }),
+						even: ls.fl(function(l){ return !l.isSymmetrical && !l.isOdd }),
+						both: ls.fl(function(l){ return l.isSymmetrical })
+					}
+				}),
+			rows = chunkedToRows(chunked);
 			
-			maxDayCount = haveSeparate? (oddLessons.isEmpty()? 0: 1) + (evenLessons.isEmpty()? 0: 1): 1;
-			
-
-		table.appendChild(tr = tag('tr'));
-		tr.appendChild(tag('th', null, null, slot.numberInDay(s) + 1, {rowspan:maxDayCount}));
-		tr.appendChild(tag('th', null, null, slot.break(null, s).str.time, {rowspan:maxDayCount}));
+		var firstRow = rows.first(), firstTd = firstRow.children[0];
+		firstRow.insertBefore(tag('th', '', '', parseInt(numInDay) + 1, {rowspan: rows.length}), firstTd);
+		firstRow.insertBefore(tag('th', '', '', timeStr, {rowspan: rows.length}), firstTd);
 		
-		if(haveSeparate){
-			if(haveOdd){
-				tr.appendChild(tag('th', null, null, 'нечет'));
-				generateDayRows(oddLessons, tr).each(function(r){ table.appendChild(r) }, true, false);
-			} 
-			if(haveEven) {
-				if(haveOdd) table.appendChild(tr = tag('tr'));
-				tr.appendChild(tag('th', null, null, 'чет'));
-				generateDayRows(evenLessons, tr).each(function(r){ table.appendChild(r) }, false, true);
-			}
-		} else {
-			tr.appendChild(tag('th', {rowspan:maxDayCount}));
-			generateDayRows(lessons, tr).each(function(r){ table.appendChild(r) }, true, true);
-		}
+		rows.each(function(r){ table.appendChild(r) });
 	
 	});
 
