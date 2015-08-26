@@ -102,10 +102,30 @@ shred.define({
 			}, target);
 		});
 
-		db.ents.cohort.listen('dataUpdated', shreds.scheduleDisplayTab.onValueTypeUpdate);
-		db.ents.lector.listen('dataUpdated', shreds.scheduleDisplayTab.onValueTypeUpdate);
-		db.ents.room.listen('dataUpdated', shreds.scheduleDisplayTab.onValueTypeUpdate);
-		db.ents.subject.listen('dataUpdated', shreds.scheduleDisplayTab.onValueTypeUpdate);
+		var mainSuggestFillWaiter = waiter(4, function(){
+			var node = el('schedule_display_value_input');
+			var items = {};
+			({
+				'cohort': db.data.cohort.map(cohort.toString),
+				'lector': db.data.lector.map(lector.toString),
+				'room': db.data.room.map(room.toString),
+				'subject': db.data.subject.map(subject.toString)
+			}).each(function(data, prefix){ 
+				data.each(function(item, key){
+					items[prefix + '|' + key] = item;
+				});
+			});
+			
+			console.log(items);
+			
+			node.data(items);
+		});
+		
+		
+		db.ents.cohort.listen('dataUpdated', mainSuggestFillWaiter.tick);
+		db.ents.lector.listen('dataUpdated', mainSuggestFillWaiter.tick);
+		db.ents.room.listen('dataUpdated', mainSuggestFillWaiter.tick);
+		db.ents.subject.listen('dataUpdated', mainSuggestFillWaiter.tick);
 		
 		var renderCohortLinks = function(){
 			if(db.data.schedule.isEmpty() || db.data.cohort.isEmpty() || db.data.lector.isEmpty()) return;
@@ -221,28 +241,11 @@ shred.define({
 				pageHash.setParam('advanced', false);
 			}
 		},
-		onValueTypeUpdate: function(){
-			var node = el('schedule_display_value_input');
-			node.value(undefined);
-			switch(el('schedule_display_value_type').value){
-				case 'cohort':
-					node.data(db.data.cohort.map(cohort.toString));
-					break;
-				case 'lector':
-					node.data(db.data.lector.map(lector.toString));
-					break;
-				case 'room':
-					node.data(db.data.room.map(room.toString));
-					break;
-				case 'subject':
-					node.data(db.data.subject.map(subject.toString));
-					break;
-			}
-		},
 		displayLessonsByFilter: function(){
 			var newParams = pageHash.getParams();
-			newParams.id = parseInt(el('schedule_display_value_input').value());
-			newParams.type = el('schedule_display_value_type').value;
+			var rawVal = el('schedule_display_value_input').value().split('|');
+			newParams.id = parseInt(rawVal[1]);
+			newParams.type = rawVal[0];
 			pageHash.setParams(newParams);
 		},
 		viewScheduleBy: function(viewType, argument, miscFilters){
@@ -1064,13 +1067,6 @@ shred.define({
 		'	<div style="width:100%;margin:30px 0px 10px 0px;">'+
 		'		<div style="font-size:20px;font-weight:bold;display:inline" class="arial">Поиск</div>'+
 		'		<div data-widget-name="domainInput" id="schedule_display_value_input" style="width:250px;display:inline-block;margin:10px;" class="big-input-container"></div>'+
-		'		<div style="display:inline" class="arial"> по </div>'+
-		'		<select id="schedule_display_value_type" style="margin:10px;height:22px" onchange="shreds.scheduleDisplayTab.onValueTypeUpdate()">'+
-		'			<option value="cohort" selected="selected">группе</option>'+
-		'			<option value="lector">преподавателю</option>'+
-		'			<option value="room">аудитории</option>'+
-		'			<option value="subject">дисциплине</option>'+
-		'		</select>'+
 		'		<input type="button" value="Искать" onclick="shreds.scheduleDisplayTab.displayLessonsByFilter()"/>'+
 		'	</div>'+
 		'	<div style="width:100%" class="arial">'+
