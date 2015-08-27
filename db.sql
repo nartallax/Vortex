@@ -357,7 +357,7 @@ insert into looting_info(value, is_regexp) values
 	('185400', false), /*Швембергер*/ 
 	('138571', false), /*Бурлов*/
 	('186260', false), /*Логдачева*/
-	('165444', false), /*Сергеева*/
+	('152010', false), /*Сергеева*/
 	('134632', false), /*Ушакова*/
 	('130646', false), /*Хайдаров*/
 	('202626', false); /*Семеновых*/
@@ -384,7 +384,7 @@ insert into lectors(surname, name, patronym, password, note, looting_info, salt)
 	('Меженин','Александр','Владимирович','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='104370' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Миронов','Андрей','Сергеевич','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='127312' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Рущенко','Нина','Геннадиевна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='105233' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
-	('Сергеева','Юлия','Игоревна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='165444' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
+	('Сергеева','Юлия','Игоревна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='152010' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Смолин','Артем','Александрович','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='163250' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Сопроненко','Лариса','Петровна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='105908' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
 	('Спиридонова','Анна','Михайловна','f1da538a65a2900cd00127ce8cc9a2dfebc968c27701bb706a905aa15b78bc8e3a1e7aca474ff13920d61fa0c0f658dbb09b86f2583e199bedfb89799c0b997d',null,(select id from looting_info where value='179902' limit 1), '9e2a7dc7c07e34d82eea58e588ca6f291d1a7a52fb4d49cb055b279deac855c3bfa150b0fca792a2e911298eb316340fc909da22a7d2500aeaf2044e86383117'),
