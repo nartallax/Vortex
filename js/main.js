@@ -973,7 +973,8 @@ var renderLessonGrid = function(data, getTDforLessons){
 		days.each(function(day, dayNum){
 			
 			var getDummyTd = function(colspan){ 
-				return tag('td', '', 'lesson-grid-table-data-cell', '', {colspan: colspan || colsAtDay[dayNum]});
+				colspan = colspan || colsAtDay[dayNum];
+				return tag('td', 'width:' + (colspan === 2? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-data-cell', '', {colspan: colspan});
 			}
 		
 			dayNum = parseInt(dayNum);
@@ -990,6 +991,7 @@ var renderLessonGrid = function(data, getTDforLessons){
 			
 			dayChunk.both.each(function(l){
 				var td = getTDforLessons([l]);
+				td.style.width = doubleDataColumnSize;
 				td.setAttribute('colspan', colsAtDay[dayNum]);
 				result[rowNum++].appendChild(td);
 			});
@@ -998,6 +1000,12 @@ var renderLessonGrid = function(data, getTDforLessons){
 				var tr = result[rowNum++];
 				var tdOdd = dayChunk.odd[unsymNum]? getTDforLessons([dayChunk.odd[unsymNum]]): getDummyTd(1),
 					tdEven = dayChunk.even[unsymNum]? getTDforLessons([dayChunk.even[unsymNum]]): getDummyTd(1);
+				
+				tdOdd.setAttribute('colspan', 1);
+				tdEven.setAttribute('colspan', 1);
+				
+				tdOdd.style.width = singleDataColumnSize;
+				tdEven.style.width = singleDataColumnSize;
 				
 				tr.appendChild(tdEven);
 				tr.appendChild(tdOdd);
@@ -1021,29 +1029,34 @@ var renderLessonGrid = function(data, getTDforLessons){
 	
 	var dataByDays = data.divide(dayOfLesson);
 	
-	console.log(dataByDays.map(function(d){ return d.map(lesson.toString) }));
-	
 	var haveSplitAtDay = dataByDays.map(function(v){ return haveSplitLessonsIn(v) });
 	var colsAtDay = haveSplitAtDay.map(function(v){ return v? 2: 1 });
+	var dataCols = days.spawn(function(res, c, num){ return res + (colsAtDay[num] || 1) }, 0),
+		singleDataColumnSize = ((0.9 / dataCols) * 100) + '%',
+		doubleDataColumnSize = ((0.9 / dataCols) * 200) + '%';
 		
 	table.appendChild(tr = tag('tr'));
 	tr.appendChild(tag('th', null, null, 'Пара'));
 	tr.appendChild(tag('th', null, null, 'Время'));
-	//tr.appendChild(tag('th', null, null, 'Неделя'));
-	days.each(function(d, num){ tr.appendChild(tag('th', null, 'lesson-grid-table-day-cell', d, {colspan: colsAtDay[num]})) });
+	days.each(function(d, num){ tr.appendChild(tag('th', 'width:' + (haveSplitAtDay[num]? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-day-cell', d, {colspan: colsAtDay[num] || 1})) });
 	
 	var haveSplitLessons = haveSplitLessonsIn(data);
 	
+	var dataCols = days.size();
+	
 	if(haveSplitLessons){
+		dataCols = 0;
 		table.appendChild(tr = tag('tr'));
 		tr.appendChild(tag('th'));
 		tr.appendChild(tag('th'));
 		
 		days.each(function(d, num){ 
 			if(haveSplitAtDay[num]){
-				tr.appendChild(tag('th', '', '', 'чет'));
-				tr.appendChild(tag('th', '', '', 'нечет'));
-			} else tr.appendChild(tag('th'));
+				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell', 'чет'));
+				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell', 'нечет'));
+			} else {
+				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell'));
+			}
 		});
 	}
 	

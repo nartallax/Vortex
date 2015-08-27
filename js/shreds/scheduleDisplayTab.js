@@ -116,8 +116,6 @@ shred.define({
 				});
 			});
 			
-			console.log(items);
-			
 			node.data(items);
 		});
 		
@@ -486,9 +484,10 @@ shred.define({
 				
 			currentSlot = currentSlot? currentSlot.id: currentSlot;
 			
-			var container = el('schedule_display_search_results_grid_table_view'),
+			var container = el('schedule_display_search_results_grid_table_view_container'),
+				outerBlock = el('schedule_display_search_results_grid_table_view'),
 				getTDforLessons = function(lessons){
-					var containerTD = tag('td', '', 'lesson-grid-table-data-cell' + (lessons.isEmpty()? '': ' not-empty'));
+					var containerTD = tag('td', 'position:relative', 'lesson-grid-table-data-cell' + (lessons.isEmpty()? '': ' not-empty'));
 					
 					lessons.each(function(l){
 						var current = l.slots.spawn(function(res, s){ return res || s === currentSlot }, false);
@@ -500,7 +499,7 @@ shred.define({
 					return containerTD;
 				}, 
 				getLessonContainer = function(_lesson, current){
-				var result = tag('div', 'overflow:hidden;position:relative;'),
+				var result = tag('div', 'overflow:hidden;position:absolute;'),
 					firstLine = tag('div', 'cursor:pointer;text-decoration:underline;overflow:visible;white-space:nowrap;text-align:left;margin:5px 0px 0px 5px'), 
 					secondLine = tag('div', 'overflow:hidden;white-space:nowrap;text-align:left;margin:5px 0px 5px 5px'),
 					rent = db.data.room[_lesson.room] || {building:undefined, name:''},
@@ -562,8 +561,20 @@ shred.define({
 				return result;
 			}
 			
+			var table = renderLessonGrid(data, getTDforLessons);
+			
 			container.innerHTML = '';
-			container.appendChild(renderLessonGrid(data, getTDforLessons));
+			container.appendChild(table);
+			
+			var resizeListener = function(){
+				if(!table.parentNode) removeListener('resize', resizeListener, window);
+				var w = window.innerWidth - 30;
+				container.style.width = w + 'px', container.style.left = '-' + (w/2) + 'px';
+				outerBlock.style.height = container.offsetHeight + 'px';
+			}
+			addListener('resize', resizeListener, window);
+			setTimeout(resizeListener, 1);
+			
 		},
 		onFindFreeRoomClick: function(){
 			var popupContent = template(
@@ -1166,7 +1177,9 @@ shred.define({
 		'	</div>'+
 		'	<div id="schedule_display_search_results_views_container">'+
 		'		<div id="schedule_display_search_results_bullet_list_view"></div>'+
-		'		<div id="schedule_display_search_results_grid_table_view"></div>'+
+		'		<div id="schedule_display_search_results_grid_table_view" style="position:relative;width:0px;margin-left:auto;margin-right:auto">' +
+		' 			<div id="schedule_display_search_results_grid_table_view_container" style="position:absolute;	">' +
+		'		</div>'+
 		'	</div>'+
 		'</div>'+
 '	</div>'+

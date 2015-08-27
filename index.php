@@ -194,10 +194,13 @@
 			
 			.lesson-grid-table-day-cell,
 			.lesson-grid-table-data-cell {
-				width:114px;
 				border:1px solid #999;
 				padding: 0px;
 				overflow:hidden;
+			}
+			
+			.lesson-grid-table-data-cell {
+				height:50px;
 			}
 			
 			.lesson-grid-table-data-cell > * {
