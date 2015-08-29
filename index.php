@@ -194,10 +194,15 @@
 			
 			.lesson-grid-table-day-cell,
 			.lesson-grid-table-data-cell {
-				border:1px solid #999;
+				border-top:1px solid #999;
+				border-bottom:1px solid #999;
 				padding: 0px;
 				overflow:hidden;
 			}
+			
+			.lesson-grid-table-data-cell.lesson-both { border:1px solid #999; }
+			.lesson-grid-table-data-cell.lesson-even { border-right:1px solid #ccc; border-left:1px solid #999;  }
+			.lesson-grid-table-data-cell.lesson-odd  { border-left:1px solid #ccc;  border-right:1px solid #999; }
 			
 			.lesson-grid-table-data-cell {
 				height:50px;

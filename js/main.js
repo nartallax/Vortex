@@ -993,36 +993,43 @@ var renderLessonGrid = function(data, getTDforLessons){
 				lastRowSpan = result.length - lastRowNum;
 			
 			if(unsymLen + dayChunk.both.length === 0){
-				result[0].appendChild(getDummyTd(null, result.length));
+				var td = getDummyTd(null, result.length);
+				td.className += ' lesson-both';
+				result[0].appendChild(td);
 				return;
 			}
 			
 			dayChunk.both.each(function(l){
 				var td = getTDforLessons([l]), cspan = colsAtDay[dayNum] || 1;
 				td.style.width = (cspan === 2? doubleDataColumnSize: singleDataColumnSize);
+				td.className += ' lesson-both';
 				td.setAttribute('colspan', cspan);
 				td.setAttribute('rowspan', rowNum === lastRowNum? lastRowSpan: 1);
 				result[rowNum++].appendChild(td);
 			});
 			
-			for(var unsymNum = 0; unsymNum < unsymLen; unsymNum++){
-				var rowspan = rowNum === lastRowNum? lastRowSpan: 1;
-				var tr = result[rowNum++];
-				var tdOdd = dayChunk.odd[unsymNum]? getTDforLessons([dayChunk.odd[unsymNum]]): getDummyTd(1),
-					tdEven = dayChunk.even[unsymNum]? getTDforLessons([dayChunk.even[unsymNum]]): getDummyTd(1);
-				
-				tdOdd.setAttribute('colspan', 1);
-				tdEven.setAttribute('colspan', 1);
-				
-				tdOdd.setAttribute('rowspan', rowspan);
-				tdEven.setAttribute('rowspan', rowspan);
-				
-				tdOdd.style.width = singleDataColumnSize;
-				tdEven.style.width = singleDataColumnSize;
-				
-				tr.appendChild(tdEven);
-				tr.appendChild(tdOdd);
+			var processUnsym = function(arr, cls){
+				cls = ' ' + cls;
+				if(result.length <= dayChunk.both.length) return;
+				if(arr.length === 0) {
+					var td = getDummyTd(1, result.length - dayChunk.both.length);
+					td.className += cls;
+					result[dayChunk.both.length].appendChild(td);
+				} else for(var unsymNum = 0; unsymNum < arr.length; unsymNum++){
+					var tr = result[rowNum + unsymNum], td;
+
+					td = getTDforLessons([arr[unsymNum]]);
+					td.style.width = singleDataColumnSize;
+					td.className += cls;
+					td.setAttribute('colspan', 1);
+					td.setAttribute('rowspan', (unsymNum < arr.length - 1)? 1: result.length - dayChunk.both.length - unsymNum);
+					tr.appendChild(td);
+				}
 			}
+			
+			processUnsym(dayChunk.even, 'lesson-even');
+			processUnsym(dayChunk.odd, 'lesson-odd');
+			
 			
 		});
 		
@@ -1086,6 +1093,7 @@ var renderLessonGrid = function(data, getTDforLessons){
 					});
 				})
 				.map(function(ls){
+					//ls = ls.fl(function(l){ return slot.numberInDay(l.slots.first()) === 0 })
 					return {
 						odd: ls.fl(function(l){ return !l.isSymmetrical && l.isOdd }),
 						even: ls.fl(function(l){ return !l.isSymmetrical && !l.isOdd }),
