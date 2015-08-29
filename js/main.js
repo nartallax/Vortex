@@ -952,9 +952,9 @@ var renderLessonGrid = function(data, getTDforLessons){
 	var dayOfLesson = function(d){ return slot.breakSimple(db.data.slot[d.slots.first()]).day };
 	var haveSplitLessonsIn = function(lessons){
 		return lessons
-			.divide(function(l){dayOfLesson})
-			.spawn(function(res, ls){ 
-			return res || !ls.spawn(function(rs, l){ return rs || slotsIsSymmetrical(l)}, false)
+			.divide(dayOfLesson)
+			.spawn(function(res, ls){
+				return res || ls.spawn(function(rs, l){ return rs || !slotsIsSymmetrical(l.slots)}, false)
 			}, false);
 	}
 	var slotsIsSymmetrical = function(sids){
@@ -970,33 +970,43 @@ var renderLessonGrid = function(data, getTDforLessons){
 	var chunkedToRows = function(chunked){
 		var result = [tag('tr')];
 		
+		var requiredRowsCount = days.map(function(day, dayNum){
+			var dayChunk = chunked[dayNum] || {odd:[], even:[], both:[]},
+				unsymLen = max(dayChunk.odd.length, dayChunk.even.length);
+			return unsymLen + dayChunk.both.length;
+		}).spawn(function(res, v){ return max(res, v) }, 0);
+		
+		while(requiredRowsCount > result.length) result.push(tag('tr'));
+		
 		days.each(function(day, dayNum){
 			
-			var getDummyTd = function(colspan){ 
-				colspan = colspan || colsAtDay[dayNum];
-				return tag('td', 'width:' + (colspan === 2? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-data-cell', '', {colspan: colspan});
+			var getDummyTd = function(colspan, rowspan){ 
+				colspan = colspan || colsAtDay[dayNum] || 1;
+				rowspan = rowspan || 1;
+				return tag('td', 'width:' + (colspan === 2? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-data-cell', '', {colspan: colspan, rowspan: rowspan});
 			}
-		
-			dayNum = parseInt(dayNum);
 			
 			var dayChunk = chunked[dayNum] || {odd:[], even:[], both:[]},
 				unsymLen = max(dayChunk.odd.length, dayChunk.even.length);
-				neededRows = unsymLen + dayChunk.both.length,
-				rowNum = 0;
-			while(neededRows > result.length) {
-				var newTr = tag('tr'), needTds = dayNum;
-				result.push(newTr);
-				while(needTds-->0) newTr.appendChild(getDummyTd());
+				rowNum = 0,
+				lastRowNum = unsymLen + dayChunk.both.length - 1,
+				lastRowSpan = result.length - lastRowNum;
+			
+			if(unsymLen + dayChunk.both.length === 0){
+				result[0].appendChild(getDummyTd(null, result.length));
+				return;
 			}
 			
 			dayChunk.both.each(function(l){
-				var td = getTDforLessons([l]);
-				td.style.width = doubleDataColumnSize;
-				td.setAttribute('colspan', colsAtDay[dayNum]);
+				var td = getTDforLessons([l]), cspan = colsAtDay[dayNum] || 1;
+				td.style.width = (cspan === 2? doubleDataColumnSize: singleDataColumnSize);
+				td.setAttribute('colspan', cspan);
+				td.setAttribute('rowspan', rowNum === lastRowNum? lastRowSpan: 1);
 				result[rowNum++].appendChild(td);
 			});
 			
 			for(var unsymNum = 0; unsymNum < unsymLen; unsymNum++){
+				var rowspan = rowNum === lastRowNum? lastRowSpan: 1;
 				var tr = result[rowNum++];
 				var tdOdd = dayChunk.odd[unsymNum]? getTDforLessons([dayChunk.odd[unsymNum]]): getDummyTd(1),
 					tdEven = dayChunk.even[unsymNum]? getTDforLessons([dayChunk.even[unsymNum]]): getDummyTd(1);
@@ -1004,14 +1014,15 @@ var renderLessonGrid = function(data, getTDforLessons){
 				tdOdd.setAttribute('colspan', 1);
 				tdEven.setAttribute('colspan', 1);
 				
+				tdOdd.setAttribute('rowspan', rowspan);
+				tdEven.setAttribute('rowspan', rowspan);
+				
 				tdOdd.style.width = singleDataColumnSize;
 				tdEven.style.width = singleDataColumnSize;
 				
 				tr.appendChild(tdEven);
 				tr.appendChild(tdOdd);
 			}
-
-			while(rowNum < result.length) result[rowNum++].appendChild(getDummyTd());
 			
 		});
 		
