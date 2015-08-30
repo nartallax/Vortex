@@ -1013,7 +1013,6 @@ var renderLessonGrid = function(data, getTDforLessons){
 				if(arr.length === 0 && result.length > dayChunk.both.length) {
 					var td = getDummyTd(1, result.length - dayChunk.both.length);
 					td.className += cls + (dayChunk.both.length > 0? ' not-empty':'');
-					td.setAttribute('data-meta', dayNum);
 					result[rowNum].appendChild(td);
 				} else for(var unsymNum = 0; unsymNum < arr.length; unsymNum++){
 					var tr = result[rowNum + unsymNum], td;

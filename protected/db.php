@@ -578,7 +578,7 @@
 			case 'alter_subject_lector':
 				$result['type'] = 9;
 				$result['subtarget'] = $change['lector'];
-				$result['target'] = $change['subject'];
+				$result['other_data'] = (string)$change['subject'];
 				break;
 			default:
 				throw new Exception('server_error');
@@ -663,7 +663,7 @@
 			case 9:
 				$result['type'] = 'alter_subject_lector';
 				$result['lector'] = $change['subtarget'];
-				$result['subject'] = $result['lesson'];
+				$result['subject'] = $change['other_data'];
 				unset($result['lesson']);
 				break;
 			default:

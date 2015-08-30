@@ -8,201 +8,6 @@ shred.define({
 		bindTabToHash('propositions');
 		el('content_tab_bar').addTab(markup, {name: 'propositions', title: 'Предложения'});
 		
-		var precalcVirtualChangedLessons = null,
-			calculateVirtualChangedLessons = function(){
-				var mainSched = schedule.main(),
-					lessons = schedule.getActualLessons(mainSched),
-					ongoingChangesets = schedule.getPropositionChangesets(mainSched);
-					
-				ongoingChangesets.each(function(cset){ 
-					cset.changes.each(function(c){ 
-						change.virtualApply(c, lessons); 
-					}); 
-				});
-				precalcVirtualChangedLessons = lessons;
-			};
-		
-		var updateViewTypeState = function(){
-			if(pageHash.getParam('page') !== 'propositions') {
-				precalcVirtualChangedLessons = null;
-				return;
-			}
-		
-			if(pageHash.getParam('view')) {
-				shreds.propositionsTab.showSubmittedPropositions();
-				var r = parseInt(pageHash.getParam('room'));
-				if(!db.data.room[r]) return;
-				renderSubmittedViewByRoom(r);
-			}
-			else {
-				shreds.propositionsTab.showPropositionInputs();
-				if(pageHash.getParam('list')) shreds.propositionsTab.switchViewToList();
-				else shreds.propositionsTab.switchViewToGrid();
-			}
-		};
-		
-		var updateSubmittedRooms = function(){
-			var rooms = el('lector_submitted_propositions_room_list_input').value(),
-				tabs = el('lector_submitted_propositions_room_tabs'),
-				active = tabs.getActiveTabName();
-				
-			tabs.clearTabs();
-			rooms.each(function(r){
-				r = r + '';
-				tabs.addTab(tag('div'), {name:r, title:db.data.room[r].name}); 
-				if(r === active) {
-					tabs.activate(r);
-					active = false;
-				}
-			});
-			
-			if(active !== false && !rooms.isEmpty())
-				tabs.activate(rooms.first() + '');
-		}
-		
-		var renderSubmittedViewByRoom = function(activeRoom){
-			if(!precalcVirtualChangedLessons) calculateVirtualChangedLessons();
-			
-			var container = el('lector_submitted_propositions_table_container'),
-				lessons = precalcVirtualChangedLessons.fl(function(l){
-					return l.room === activeRoom || (l.altered && l.altered.room === activeRoom);
-				});
-				
-			lessons = lesson.virtualAlteredsToPlain(lessons).flfield('room', activeRoom);
-				
-			container.innerHTML = '';
-			container.appendChild(generateSubmittedTable(lessons));
-		}
-		
-		var onViewRoomSwitch = function(){
-			pageHash.setParam('room', el('lector_submitted_propositions_room_tabs').getActiveTabName());
-		}
-		
-		var generateSubmittedTable = function(lessons){
-			
-			var getIdAndView = function(type){
-				if(!this.getAttribute('data-val')) return;
-				var params = pageHash.getParams();
-				params.type = type;
-				params.id = parseInt(this.getAttribute('data-val'));
-				params.grid = params.grid && type !== 'subject';
-				pageHash.setParams(params);
-			}
-			
-			var onLectorClick = getIdAndView.curry('lector'),
-				onCohortClick = getIdAndView.curry('cohort');
-			
-			var getTDforLessons = function(lessons){
-				var result = tag('td', 'position:relative', 'lesson-grid-table-data-cell' + (lessons.isEmpty()? '': ' not-empty'));
-				
-				lessons.each(function(l){ result.appendChild(getLessonContainer(l)); });
-				if(!lessons.isEmpty() && lessons.last().basicChanged) addClass(result, 'altered-lesson-basic')
-				
-				return result;
-			};
-			
-			var appendComparisonRowFunction = function(table){
-				return function(name, a, b, strFunc){
-					var tr = tag('tr', '', equals(a, b)? '': 'altered-param-row');
-					table.appendChild(tr);
-					tr.appendChild(tag('th', '', '', name));
-					tr.appendChild(tag('td', '', '', strFunc(a)));
-					tr.appendChild(tag('td', '', '', strFunc(b)));
-				}
-			}
-			
-			var generateComparisonTable = function(l){
-			
-				var result = tag('table', '', 'lesson-small-comparison-table'), 
-					addRow = appendComparisonRowFunction(result);
-			
-				result.appendChild(tr = tag('tr'));
-				tr.appendChild(tag('th'));
-				tr.appendChild(tag('th', '', '', 'есть'));
-				tr.appendChild(tag('th', '', '', 'будет'));
-				
-				addRow('преподаватель', l.lector, l.altered.lector, lector.toString);
-				addRow('группы', l.cohorts, l.altered.cohorts, cohort.onLesson.toString);
-				addRow('аудитория', l.room, l.altered.room, room.toStringShort);
-				addRow('предмет', l.subject, l.altered.subject, subject.toString);
-				addRow('тип занятия', lesson.getTypeOf(l), lesson.getTypeOf(l.altered), lesson.typeToString);
-				addRow('время', l.slot, l.altered.slot, slot.toString);
-				
-				return result;
-			}
-			
-			var getLessonContainer = function(l){
-				var result = tag('div', 'padding:5px 0px'),
-					rent = db.data.room[l.room] || {building:undefined, name:''},
-					buildingName = ((db.data.building[rent.building] || {}).name || ''),
-					lectorContainer = tag('div', 'margin:0px 5px;font-weight:bold;white-space: nowrap;', 'link', lector.toString(l.lector), {'data-val': l.lector}),
-					cohortContainer = tag('div', 'margin:5px 5px 0px 5px;');
-
-				if(l.basicChanged) addClass(result, 'altered-lesson-basic');
-				else addClass(result, 'lesson-container-ordinary');
-				if(l.isNewLesson) addClass(result, 'altered-lesson-created');
-				if(l.isOldLesson) addClass(result, 'altered-lesson-deleted');
-					
-				lectorContainer.onclick = onLectorClick;
-				
-				result.appendChild(lectorContainer);
-				result.appendChild(cohortContainer);
-				
-				var first = true;
-				l.cohorts.each(function(c){
-					if(first) first = false;
-					else cohortContainer.appendChild(tag('span', '', '', ', '));
-				
-					var clink = tag('span', '', 'link', cohort.onLesson.toString(c), {'data-val': c.cohort});
-					clink.onclick = onCohortClick;
-					cohortContainer.appendChild(clink);
-				});
-				
-				if(l.baseLesson || l.note){
-					var ttip = tag('div', 'background:#ffffff;border: 1px solid #797979;padding:10px', 'arial');
-					
-					if(l.baseLesson) ttip.appendChild(generateComparisonTable(l.baseLesson));
-					if(l.note) ttip.appendChild(tag('pre', 'margin:5px 0px 0px 0px', 'arial', (l.note + '').trim()));
-					tooltip(ttip).bind(result);
-				}
-				
-				return result;
-			}
-			
-			return renderLessonGrid(lessons, getTDforLessons);
-		}
-		
-		var onDataUpdate = function(){
-			if(	!schedule.main() ||
-				db.data.lector.isEmpty() ||
-				db.data.room.isEmpty() ||
-				db.data.slot.isEmpty() ||
-				db.data.subject.isEmpty() ||
-				db.data.cohort.isEmpty()) return;
-				
-			el('lector_submitted_propositions_room_list_input')
-				.buildings(db.data.building.map(building.toString))
-				.rooms(db.data.room)
-				.value(db.data.room.flfield('is_external', false).map(function(v,k){return k}).toArr().first(10))
-				.listen('change', updateSubmittedRooms);
-				
-			el('lector_submitted_propositions_room_tabs')
-				.listen('switch', onViewRoomSwitch);
-				
-			updateSubmittedRooms();
-		}
-		
-		db.ents.schedule.listen('dataUpdated', onDataUpdate);
-		db.ents.lector.listen('dataUpdated', onDataUpdate);
-		db.ents.room.listen('dataUpdated', onDataUpdate);
-		db.ents.slot.listen('dataUpdated', onDataUpdate);
-		db.ents.subject.listen('dataUpdated', onDataUpdate);
-		db.ents.cohort.listen('dataUpdated', onDataUpdate);
-		
-		pageHash.listenChange(updateViewTypeState);
-		updateViewTypeState();
-		
-		/*
 		var onDataUpdate = function(){
 			if(!schedule.main()) return;
 			
@@ -241,7 +46,6 @@ shred.define({
 		db.ents.cohort.listen('dataUpdated', onDataUpdate);
 		
 		db.listen('roleChanged', function(){
-		
 			if(db.getRole() === 'lector'){
 				el('proposition_input_not_logged').style.display = 'none';
 				el('proposition_input_logged').style.display = 'block';
@@ -250,37 +54,8 @@ shred.define({
 				el('proposition_input_logged').style.display = 'none';
 			}
 		});
-		*/
 	},	
-	methods: {	
-		switchViewToGrid: function(){
-			el('lector_propositions_list_view_switch').style.background = '';
-			el('lector_propositions_grid_view_switch').style.background = '#F2F2F2';
-			
-			el('lector_proposition_view_submit_form').style.display = 'none';
-			el('lector_proposition_grid_submit_form').style.display = '';
-			
-			el('lector_proposition_list_table_container').style.display = 'none';
-			el('lector_proposition_grid_tables_container').style.display = '';
-		},
-		switchViewToList: function(){
-			el('lector_propositions_list_view_switch').style.background = '#F2F2F2';
-			el('lector_propositions_grid_view_switch').style.background = '';
-			
-			el('lector_proposition_view_submit_form').style.display = '';
-			el('lector_proposition_grid_submit_form').style.display = 'none';
-			
-			el('lector_proposition_list_table_container').style.display = '';
-			el('lector_proposition_grid_tables_container').style.display = 'none';
-		},
-		showSubmittedPropositions: function(){
-			el('lector_proposition_inner_tabs').activate('submitted_view');
-		},
-		showPropositionInputs: function(){
-			el('lector_proposition_inner_tabs').activate('edit');
-		},
-		
-		
+	methods: {
 		setDisplayedPropositions: function(props){
 			var node = el('propositions_container'), valuePart, totalValue;   
 			if(props.length === 0) {
@@ -294,7 +69,56 @@ shred.define({
 			var mainSchedule = db.data.schedule.flfield('is_main', true).first();
 			
 			props.sort(compareByFieldFunction('creation_date')).each(function(pref){
-				node.appendChild(tag('div','margin:5px', null, change.toString(pref, true, true, true)));
+				var totalValue = undefined,
+					lector = db.data.lector[pref.proposer];
+					
+				lector = lector.name + ' ' + lector.surname;
+				
+				var date = new Date();
+				date.setTime(pref.creation_date * 1000);
+				date = date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
+				
+				switch(pref.type){
+					case 'alter_slot':
+						valuePart = ' пусть оно проходит по ' + slot.toString(db.data.slot[pref.new_val]);
+						break;
+					case 'add_cohort':
+						valuePart = ' добавить ' + (pref.rate * 100) + '% учеников группы ' + db.data.cohort[pref.cohort].name;
+						break;
+					case 'remove_cohort':
+						valuePart = ' убрать группу ' + db.data.cohort[pref.cohort].name;
+						break;
+					case 'alter_cohort':
+						valuePart = ' изменить процент учеников группы ' + db.data.cohort[pref.cohort].name + ' на ' + (pref.new_val * 100);
+						break;
+					case 'alter_type':
+						var fake_lesson = {};
+						fake_lesson[pref.new_val] = true;
+						valuePart = ' изменить тип занятия на "' + lesson.typeToString(fake_lesson) + '"';
+						break;
+					case 'alter_room':
+						valuePart = ' переместить занятие в аудиторию ' + db.data.room[pref.new_val].name;
+						break;
+					case 'delete':
+						valuePart = ' удалить это занятие';
+						break;
+					case 'create':
+						totalValue = lector + " в " + date + ' предложил создать занятие: ' + lesson.toString(pref) + (pref.note? '; заметка: ' + pref.note:'');
+						break;
+					case 'alter_lesson_lector':
+						var target_lector = db.data.lector[pref.lector];
+						valuePart = ' пусть это занятие ведет ' + target_lector.name + ' ' + target_lector.surname;
+						break;
+					case 'alter_subject_lector':
+						var target_lector = db.data.lector[pref.lector];
+						totalValue = lector + " в " + date + ' предложил: пусть все занятия по "' + db.data.subject[pref.subject].name + '" ведет ' + target_lector.name + ' ' + target_lector.surname + (pref.note? '; заметка: ' + pref.note:'');
+						break;
+					default:
+						throw 'Unknown proposition type: ' + pref.type;
+				}
+				
+				
+				node.appendChild(tag('div','margin:5px', null,totalValue? totalValue: lector + ' в ' + date + ' предложил изменение относительно ' + lesson.toString(mainSchedule.lessons[pref.lesson], 'genitive') + ': ' + valuePart + (pref.note? '; заметка: ' + pref.note:'')));
 			});
 		},
 		alterSlot: function(){
@@ -389,8 +213,6 @@ shred.define({
 			
 			data[type] = true;
 			
-			clog(data);
-			
 			mainSchedule.unsubmittedProposition = data;
 			db.ents.schedule.update(mainSchedule);
 		},
@@ -469,54 +291,141 @@ shred.define({
 		}
 	},
 	markup: 
-'<div data-widget-name="tabGroup" id="lector_proposition_inner_tabs" style="margin:30px 3%">'+
-'	<div data-name="edit" style="display:none" data-default-active="true">'+
-'		<div class="arial light-hr">'+
-'			<div>'+
-'				Здесь вы можете вносить изменения в текущее расписание.<br/>'+
-'				Внесенные вами изменения будут отправлены администратору системы на утверждение.'+
-'			</div>'+
-'			<div style="margin:10px 0px">'+
-'				Вид: '+
-'				<div style="display:inline-block;width:24px;height:24px;cursor:pointer;margin:3px 3px 0px 7px;position:relative;top:6px" onclick="pageHash.setParam(\'list\', true);" id="lector_propositions_list_view_switch">'+
-'					<div class="bullet-list-icon" style="margin:7px 5px"></div>'+
-'				</div>'+
-'				<div style="display:inline-block;width:24px;height:24px;cursor:pointer;margin:3px 3px 0px 3px;position:relative;top:6px" onclick="pageHash.setParam(\'list\', false);" id="lector_propositions_grid_view_switch">'+
-'					<div class="grid-table-icon" style="margin:6px"></div>'+
-'				</div>'+
-'			</div>'+
-'			<div id="lector_proposition_list_table_container"></div>'+
-'			<div style="position:relative;margin:15px 0px">'+
-'				<span class="khmer">Добавленные изменения:</span>'+
-'				<span style="position:absolute;right:0px" class="link" onclick="pageHash.setParam(\'view\', true);">Планируемые изменения</span>'+
-'			</div>'+
-'			<hr/>'+
-'			<div id="lector_submitted_propositions_container"></div>'+
-'			<hr/>'+
-'			<div id="lector_proposition_grid_tables_container"></div>'+
-'			<div id="lector_proposition_grid_submit_form">'+
-'				<div class="khmer" style="margin:15px 0px">Текущие изменения:</div>'+
-'				<hr/>'+
-'				<div id="lector_propositions_unsubmitted_container"></div>'+
-'				<div style="text-align:right">'+
-'					<input type="button" value="Подтвердить" style="padding:5px 20px"/>'+
-'				</div>'+
-'			</div>'+
-'			<div id="lector_proposition_view_submit_form">'+
-'				<div class="khmer" style="margin:15px 0px">Добавить изменение</div>'+
-'			</div>'+
-'		</div>'+
-'	</div>'+
-'	<div data-name="submitted_view" style="display:none">'+
-'		<div class="khmer" style="margin:15px 0px">Планируемые изменения в расписании:</div>'+
-'		<div>Отображаемые аудитории: <div data-widget-name="roomInputPack" id="lector_submitted_propositions_room_list_input"></div></div>'+
-'		<div style="margin:15px 0px" data-widget-name="tabGroup" id="lector_submitted_propositions_room_tabs" data-widget-param-tab-header-class="tab-header tiny arial"></div>'+
-'		<div id="lector_submitted_propositions_table_container"></div>'+
-'		<div class="arial">'+
-'			<div style="margin:5px"><div style="height:15px;width:15px;display:inline-block;position:relative;top:4px" class="altered-lesson-basic"></div> - изменения, не касающиеся времени и аудиторий проведения занятий</div>'+
-'			<div style="margin:5px"><div class="altered-lesson-created" style="display:inline">Иванов И.И.</div> - если изменение будет одобрено администратором, ячейка будет занята</div>'+
-'			<div style="margin:5px"><div class="altered-lesson-deleted" style="display:inline">Иванов И.И.</div> - если изменение будет одобрено администратором, ячейка будет свободна</div>'+
-'		</div>'+
-'	</div>'+
+'<div style="margin:10px 10px;font-size:18px">' + 
+'	<b>Предложения по изменению существующего расписания</b><br/>' + 
+'	Пока что система в разработке, поэтому:<br/>' + 
+'	1. Вы <b>не</b> можете вносить предложения по изменению пар, которых нет на ИСУ в данный момент, или чужих пар.<br/>' + 
+'	2. Вы можете только вносить предложения, любые другие действия с ними недоступны.<br/>' + 
+'	Если у вас есть более общие пожелания относительно расписания, перейдите на страницу "пожелания" (кнопка вверху страницы, доступна после входа) и попробуйте указать их там.<br/>' + 
+'	Если вы хотите предложить какое-то изменение, тип которого не предусмотрен системой, воспользуйтесь кнопкой "отзыв".<br/>' + 
+'	(и вообще, пользуйтесь этой кнопкой по любому удобному поводу)<br/>' + 
+'	<hr/>' + 
+'</div>' + 
+'<div style="margin:10px;text-align:center;" id="propositions_container">' + 
+'	Загрузка...' + 
+'</div>' + 
+'<div style="margin:10px 10px 10px 10px;text-align:center;">' + 
+'	<hr/>' + 
+'	<div id="proposition_input_not_logged">Чтобы предложить изменение расписания, войдите как преподаватель.</div>' + 
+'	<div style="display:none;text-align:left;line-height:25px" id="proposition_input_logged">' + 
+'		<div style="text-align:center;line-height:15px">Выберите одно из возможных изменений, задайте нужное значение полям, после чего кликните на соответствующую кнопку "Предлагаю". Обратите внимание на поле "заметка" в самом низу - вы можете вводить в него заметки для любого типа изменений и они будут прикреплены к ним.</div>' + 
+'		<div style="margin-top:10px">' + 
+'			Цель изменения:' + 
+'			<select id="alteration_target_lesson">' + 
+'				<option value="-1">загрузка...</option>' + 
+'			</select>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterSlot()"/> передвинуть её на' + 
+'			<select id="alter_slot_oddity">' + 
+'				<option value="0">четный</option>' + 
+'				<option value="1">нечетный</option>' + 
+'			</select>' + 
+'			<select id="alter_slot_day">' + 
+'				<option value="0">понедельник</option>' + 
+'				<option value="86400">вторник</option>' + 
+'				<option value="172800">среду</option>' + 
+'				<option value="259200">четверг</option>' + 
+'				<option value="345600">пятницу</option>' + 
+'				<option value="432000">субботу</option>' + 
+'				<option value="518400">воскресенье</option>' + 
+'			</select>,' + 
+'			<select id="alter_slot_time">' + 
+'				<option value="28800:4800">с 8:00 до 9:20</option>' + 
+'				<option value="34200:4800">с 9:30 до 10:50</option>' + 
+'				<option value="39600:4800">с 11:00 до 12:20</option>' + 
+'				<option value="45600:4800">с 12:40 до 14:00</option>' + 
+'				<option value="51600:4800">с 14:20 до 15:40</option>' + 
+'				<option value="57000:4800">с 15:50 до 17:10</option>' + 
+'				<option value="62400:4800">с 17:20 до 18:40</option>' + 
+'				<option value="67800:4200">с 18:50 до 20:00</option>' + 
+'				<option value="72600:4200">с 20:10 до 21:20</option>' + 
+'			</select>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.addCohort()"/>: пусть на неё ходит еще и группа' + 
+'			<div data-widget-name="domainInput" id="add_cohort_target_cohort" style="width:100px;display:inline-block"></div>' + 
+' 			(<input type="number" id="add_cohort_target_cohort_rate" value="100"/> процентов учеников)' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.removeCohort()"/>: пусть на неё НЕ ходит группа' + 
+'			<div data-widget-name="domainInput" id="remove_cohort_target_cohort" style="width:100px;display:inline-block"></div>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterCohort()"/>: пусть на неё ходит <input type="number" id="alter_cohort_target_cohort_rate" value="100" style="width:50px"/> процентов учеников группы' + 
+'			<div data-widget-name="domainInput" id="alter_cohort_target_cohort" style="width:100px;display:inline-block"></div>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterType()"/> считать эту пару  ' + 
+'			<select id="alter_type_target_type">' + 
+'				<option value="is_lec">лекцией</option>' + 
+'				<option value="is_lab">лабораторной</option>' + 
+'				<option value="is_prk">практикой</option>' + 
+'				<option value="is_srs">СРС</option>' + 
+'				<option value="is_etc">чем-нибудь вне списка</option>' + 
+'			</select>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterRoom()"/> проводить эту пару в ' + 
+'			<div data-widget-name="domainInput" id="alter_room_target_room" style="width:100px;display:inline-block"></div>' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.deleteLesson()"/> удалить эту пару вообще' + 
+'		</div>' + 
+'		<div style="margin-left:30px">' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterLessonLector()"/>: пусть эту пару ведет' + 
+'			<div data-widget-name="domainInput" id="alter_lesson_lector_select" style="width:100px;display:inline-block"></div>' + 
+'		</div>' + 
+'		<div>' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.alterSubjectLector()"/>: пусть ' + 
+'			<div data-widget-name="domainInput" id="alter_subject_lector_select_lector" style="width:100px;display:inline-block"></div>' + 
+'			ведет все занятия по предмету '+
+'			<div data-widget-name="domainInput" id="alter_subject_lector_select_subject" style="width:100px;display:inline-block"></div>' + 
+'		</div>' + 
+'		<div>' + 
+'			<input value="Предлагаю" type="button" onclick="shreds.propositionsTab.createLesson()"/> создать' + 
+'			<select id="create_lesson_type">' + 
+'				<option value="is_lec">лекцию</option>' + 
+'				<option value="is_lab">лабораторную</option>' + 
+'				<option value="is_prk">практику</option>' + 
+'				<option value="is_srs">СРС</option>' + 
+'				<option value="is_etc">просто пару</option>' + 
+'			</select> по ' + 
+'			<div data-widget-name="domainInput" id="create_lesson_subject" style="width:100px;display:inline-block"></div>' + 
+'			, которая будет проходить в' + 
+'			<div data-widget-name="domainInput" id="create_lesson_room" style="width:100px;display:inline-block"></div>' + 
+'			 и на которую придет <input type="number" id="create_lesson_cohort_rate" value="100" style="width:50px"/> процентов учеников группы ' + 
+'			<div data-widget-name="domainInput" id="create_lesson_cohort" style="width:100px;display:inline-block"></div>' + 
+'			, которая будет проходить по' + 
+'			<select id="create_lesson_oddity">' + 
+'				<option value="0">четным</option>' + 
+'				<option value="1">нечетным</option>' + 
+'			</select>' + 
+'			<select id="create_lesson_day">' + 
+'				<option value="0">понедельникам</option>' + 
+'				<option value="86400">вторникам</option>' + 
+'				<option value="172800">средам</option>' + 
+'				<option value="259200">четвергам</option>' + 
+'				<option value="345600">пятницам</option>' + 
+'				<option value="432000">субботам</option>' + 
+'				<option value="518400">воскресеньям</option>' + 
+'			</select>' + 
+'			<select id="create_lesson_time">' + 
+'				<option value="28800:4800">с 8:00 до 9:20</option>' + 
+'				<option value="34200:4800">с 9:30 до 10:50</option>' + 
+'				<option value="39600:4800">с 11:00 до 12:20</option>' + 
+'				<option value="45600:4800">с 12:40 до 14:00</option>' + 
+'				<option value="51600:4800">с 14:20 до 15:40</option>' + 
+'				<option value="57000:4800">с 15:50 до 17:10</option>' + 
+'				<option value="62400:4800">с 17:20 до 18:40</option>' + 
+'				<option value="67800:4200">с 18:50 до 20:00</option>' + 
+'				<option value="72600:4200">с 20:10 до 21:20</option>' + 
+'			</select>' + 
+'		</div>' + 
+'		<hr/>' + 
+'		<div style="width:100%;height:100px">' + 
+'			<textarea resize="none" id="proposition_note_input" style="width:100%;height:100%" placeholder="Заметка"></textarea>' + 
+'		</div>' + 
+'	</div>' + 
 '</div>'
 });

@@ -134,8 +134,7 @@ shred.define({
 				cols[i].innerHTML = '';
 			}
 			var ourLectors = db.data.lector.flfield('is_external', false).map(function(l){ return true });
-			var lectorContainer = el('lector_fast_links_container');
-
+			
 			var onLectorClick = function(){
 				var params = pageHash.getParams();
 				params.type = 'lector';
@@ -150,6 +149,7 @@ shred.define({
 			}
 			
 			var colNum = 1, roomContainer = el('room_fast_links_container');
+			roomContainer.innerHTML = '';
 			db.data.room.flfield('is_external', false).toArr().sort(compareByFieldFunction('name')).each(function(l){
 				var ltag = tag('span', 'color:#66CCFF;margin:10px;white-space:nowrap;cursor:pointer;', '', l.name, {'data-id':l.id});
 				ltag.onclick = onRoomClick;
@@ -157,8 +157,9 @@ shred.define({
 				roomContainer.appendChild(tag('span', '', '', ' '));
 			});
 			
-			clarr(lectorContainer.children).each(function(c){ c.innerHTML = ''; })
-
+			var lectorCols = el('lector_fast_links_container').children
+			for(var i = 0; i < lectorCols.length; i++) lectorCols[i].innerHTML = '';
+			
 			ourLectors
 				.map(function(l, k){return db.data.lector[parseInt(k)];})
 				.toArr()
