@@ -159,6 +159,7 @@
 	function processHttpRequest(){
 		global $sessionData;
 		global $packedCommunication;
+		global $CONFIG;
 		
 		try{
 

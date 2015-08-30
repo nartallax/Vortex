@@ -567,6 +567,8 @@ shred.define({
 			container.appendChild(table);
 			
 			var resizeListener = function(){
+				var height = container.offsetHeight;
+				if(height < 30) return setTimeout(resizeListener, 50);
 				if(!table.parentNode) removeListener('resize', resizeListener, window);
 				var w = window.innerWidth - 30;
 				container.style.width = w + 'px', container.style.left = '-' + (w/2) + 'px';
@@ -1178,7 +1180,7 @@ shred.define({
 		'	<div id="schedule_display_search_results_views_container">'+
 		'		<div id="schedule_display_search_results_bullet_list_view"></div>'+
 		'		<div id="schedule_display_search_results_grid_table_view" style="position:relative;width:0px;margin-left:auto;margin-right:auto">' +
-		' 			<div id="schedule_display_search_results_grid_table_view_container" style="position:absolute;	">' +
+		' 			<div id="schedule_display_search_results_grid_table_view_container" style="position:absolute;"></div>' +
 		'		</div>'+
 		'	</div>'+
 		'</div>'+

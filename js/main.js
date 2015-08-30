@@ -1010,11 +1010,11 @@ var renderLessonGrid = function(data, getTDforLessons){
 			
 			var processUnsym = function(arr, cls){
 				cls = ' ' + cls;
-				if(result.length <= dayChunk.both.length) return;
-				if(arr.length === 0) {
+				if(arr.length === 0 && result.length > dayChunk.both.length) {
 					var td = getDummyTd(1, result.length - dayChunk.both.length);
-					td.className += cls;
-					result[dayChunk.both.length].appendChild(td);
+					td.className += cls + (dayChunk.both.length > 0? ' not-empty':'');
+					td.setAttribute('data-meta', dayNum);
+					result[rowNum].appendChild(td);
 				} else for(var unsymNum = 0; unsymNum < arr.length; unsymNum++){
 					var tr = result[rowNum + unsymNum], td;
 
@@ -1027,8 +1027,10 @@ var renderLessonGrid = function(data, getTDforLessons){
 				}
 			}
 			
-			processUnsym(dayChunk.even, 'lesson-even');
-			processUnsym(dayChunk.odd, 'lesson-odd');
+			if(unsymLen > 0){
+				processUnsym(dayChunk.even, 'lesson-even');
+				processUnsym(dayChunk.odd, 'lesson-odd');
+			}
 			
 			
 		});
@@ -1093,7 +1095,14 @@ var renderLessonGrid = function(data, getTDforLessons){
 					});
 				})
 				.map(function(ls){
-					//ls = ls.fl(function(l){ return slot.numberInDay(l.slots.first()) === 0 })
+				/*
+					ls = ls.fl(function(l){  // this commented code is here for debug purpose
+						return slot.numberInDay(l.slots.first()) === 1 
+							&& (slot.breakSimple(db.data.slot[l.slots.first()]).day === 2
+							|| slot.breakSimple(db.data.slot[l.slots.first()]).day === 4)
+							//&& !slot.breakSimple(db.data.slot[l.slots.first()]).odd
+					});
+				*/
 					return {
 						odd: ls.fl(function(l){ return !l.isSymmetrical && l.isOdd }),
 						even: ls.fl(function(l){ return !l.isSymmetrical && !l.isOdd }),
