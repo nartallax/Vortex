@@ -949,6 +949,12 @@ var renderTable = function(data){
 }
 var renderLessonGrid = function(data, getTDforLessons){
 	
+	var reverse = function(arr){
+		var result = [], i, l = arr.length;
+		for(i = l - 1; i >= 0; i--) result.push(arr[i]);
+		return result;
+	}
+	
 	var dayOfLesson = function(d){ return slot.breakSimple(db.data.slot[d.slots.first()]).day };
 	var haveSplitLessonsIn = function(lessons){
 		return lessons
@@ -967,117 +973,84 @@ var renderLessonGrid = function(data, getTDforLessons){
 			
 		return !syms.spawn(function(r, s){ return r || s }, false);
 	}
-	var chunkedToRows = function(chunked){
-		var result = [tag('tr')];
+	var renderChunksIntoRow = function(tr, chunked){
+	
+		days.each(function(d, dayNum){
 		
-		var requiredRowsCount = days.map(function(day, dayNum){
-			var dayChunk = chunked[dayNum] || {odd:[], even:[], both:[]},
-				unsymLen = max(dayChunk.odd.length, dayChunk.even.length);
-			return unsymLen + dayChunk.both.length;
-		}).spawn(function(res, v){ return max(res, v) }, 0);
+			var chunk = chunked[dayNum] || {odd:[], even:[], both:[]},
+				o = chunk.odd, e = chunk.even, b = chunk.both;
 		
-		while(requiredRowsCount > result.length) result.push(tag('tr'));
+			if(b.length + o.length + e.length === 0) {
+				return tr.appendChild(tag('td', '', 'lesson-grid-table-data-cell lesson-both', {colspan:2}));
+			}
 		
-		days.each(function(day, dayNum){
-			
-			var getDummyTd = function(colspan, rowspan){ 
-				colspan = colspan || colsAtDay[dayNum] || 1;
-				rowspan = rowspan || 1;
-				return tag('td', 'width:' + (colspan === 2? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-data-cell', '', {colspan: colspan, rowspan: rowspan});
+			if(o.length + e.length === 0){
+				var td = getTDforLessons(b);
+				td.setAttribute('colspan', 2);
+				td.style.width = colWidth;
+				td.className += ' lesson-both';
+				return tr.appendChild(td);
 			}
 			
-			var dayChunk = chunked[dayNum] || {odd:[], even:[], both:[]},
-				unsymLen = max(dayChunk.odd.length, dayChunk.even.length);
-				rowNum = 0,
-				lastRowNum = unsymLen + dayChunk.both.length - 1,
-				lastRowSpan = result.length - lastRowNum;
-			
-			if(unsymLen + dayChunk.both.length === 0){
-				var td = getDummyTd(null, result.length);
-				td.className += ' lesson-both';
-				result[0].appendChild(td);
-				return;
-			}
-			
-			dayChunk.both.each(function(l){
-				var td = getTDforLessons([l]), cspan = colsAtDay[dayNum] || 1;
-				td.style.width = (cspan === 2? doubleDataColumnSize: singleDataColumnSize);
-				td.className += ' lesson-both';
-				td.setAttribute('colspan', cspan);
-				td.setAttribute('rowspan', rowNum === lastRowNum? lastRowSpan: 1);
-				result[rowNum++].appendChild(td);
+			b.each(function(l){
+				var odd = l.cloneDeep(), even = l.cloneDeep();
+				odd.slots = even.slots.fl(function(s){ return db.data.slot[s].start_time > secondsInWeek });
+				even.slots = even.slots.fl(function(s){ return db.data.slot[s].start_time > secondsInWeek });
+				o.push(odd);
+				e.push(even);
 			});
 			
-			var processUnsym = function(arr, cls){
-				cls = ' ' + cls;
-				if(arr.length === 0 && result.length > dayChunk.both.length) {
-					var td = getDummyTd(1, result.length - dayChunk.both.length);
-					td.className += cls + (dayChunk.both.length > 0? ' not-empty':'');
-					result[rowNum].appendChild(td);
-				} else for(var unsymNum = 0; unsymNum < arr.length; unsymNum++){
-					var tr = result[rowNum + unsymNum], td;
-
-					td = getTDforLessons([arr[unsymNum]]);
-					td.style.width = singleDataColumnSize;
-					td.className += cls;
-					td.setAttribute('colspan', 1);
-					td.setAttribute('rowspan', (unsymNum < arr.length - 1)? 1: result.length - dayChunk.both.length - unsymNum);
-					tr.appendChild(td);
-				}
-			}
+			o = reverse(o);
+			e = reverse(e);
 			
-			if(unsymLen > 0){
-				processUnsym(dayChunk.even, 'lesson-even');
-				processUnsym(dayChunk.odd, 'lesson-odd');
-			}
+			var otd = getTDforLessons(o);
+			var etd = getTDforLessons(e);
 			
+			otd.setAttribute('colspan', 1);
+			etd.setAttribute('colspan', 1);
+			otd.style.width = colWidth;
+			etd.style.width = colWidth;
+			otd.className += ' lesson-odd';
+			etd.className += ' lesson-even';
+			
+			tr.appendChild(etd);
+			tr.appendChild(otd);
 			
 		});
-		
-		return result;
-			
-	};
 	
+	};
 	
 	var table = tag('table','width:100%;margin-top:20px', 'arial'), tr,
 		days = slot.days();
 		
 	data = data.cloneDeep().each(function(l){ delete l.id; }).uniq().each(function(l, k){ l.id = parseInt(k); });
 	data = lesson.glueOddEven(lesson.glueCohorts(data)).each(lesson.mergeNotes);
-	data = data.fl(function(d){ return d.slots.length > 0 });
+	data = data.fl(function(l){ return l.slots.length > 0 });
 	
 	var dataByDays = data.divide(dayOfLesson);
 	
-	var haveSplitAtDay = dataByDays.map(function(v){ return haveSplitLessonsIn(v) });
-	var colsAtDay = haveSplitAtDay.map(function(v){ return v? 2: 1 });
-	var dataCols = days.spawn(function(res, c, num){ return res + (colsAtDay[num] || 1) }, 0),
-		singleDataColumnSize = ((0.9 / dataCols) * 100) + '%',
-		doubleDataColumnSize = ((0.9 / dataCols) * 200) + '%';
-		
+	days = days.fl(function(d, num){ return parseInt(num) < 6 || (dataByDays[num] && dataByDays[num].length > 0) });
+	
+	var colWidth = (95 / (days.size() * 2)) + '%';
+	
 	table.appendChild(tr = tag('tr'));
 	tr.appendChild(tag('th', null, null, 'Пара'));
 	tr.appendChild(tag('th', null, null, 'Время'));
-	days.each(function(d, num){ tr.appendChild(tag('th', 'width:' + (haveSplitAtDay[num]? doubleDataColumnSize: singleDataColumnSize), 'lesson-grid-table-day-cell', d, {colspan: colsAtDay[num] || 1})) });
+	days.each(function(d, num){ tr.appendChild(tag('th', '', 'lesson-grid-table-day-cell', d, {colspan:2})) });
 	
-	var haveSplitLessons = haveSplitLessonsIn(data);
-	
-	var dataCols = days.size();
-	
-	if(haveSplitLessons){
-		dataCols = 0;
-		table.appendChild(tr = tag('tr'));
-		tr.appendChild(tag('th'));
-		tr.appendChild(tag('th'));
-		
-		days.each(function(d, num){ 
-			if(haveSplitAtDay[num]){
-				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell', 'чет'));
-				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell', 'нечет'));
-			} else {
-				tr.appendChild(tag('th', 'width:' + singleDataColumnSize, 'lesson-grid-table-day-cell'));
-			}
-		});
-	}
+	table.appendChild(tr = tag('tr'));
+	tr.appendChild(tag('th'));
+	tr.appendChild(tag('th'));
+	days.each(function(){ 
+		var odddiv = tag('div','position:absolute;top:25%;width:100%', '', 'нечет'),
+			evendiv = tag('div','position:absolute;top:25%;width:100%', '', 'чет'),
+			oddrow = tag('th', 'position:relative', 'lesson-grid-table-day-cell'),
+			evenrow = tag('th', 'position:relative', 'lesson-grid-table-day-cell');
+		oddrow.appendChild(odddiv);
+		evenrow.appendChild(evendiv);
+		tr.appendChild(evenrow);
+		tr.appendChild(oddrow);
+	});
 	
 	db.data.slot.fl(function(s){ return s.start_time < secondsInDay}).each(function(s){
 	
@@ -1107,14 +1080,14 @@ var renderLessonGrid = function(data, getTDforLessons){
 						even: ls.fl(function(l){ return !l.isSymmetrical && !l.isOdd }),
 						both: ls.fl(function(l){ return l.isSymmetrical })
 					}
-				}),
-			rows = chunkedToRows(chunked);
-			
-		var firstRow = rows.first(), firstTd = firstRow.children[0];
-		firstRow.insertBefore(tag('th', '', '', parseInt(numInDay) + 1, {rowspan: rows.length}), firstTd);
-		firstRow.insertBefore(tag('th', '', '', timeStr, {rowspan: rows.length}), firstTd);
-		
-		rows.each(function(r){ table.appendChild(r) });
+				});
+				
+				
+		var row = tag('tr');
+		row.appendChild(tag('th', '', '', parseInt(numInDay) + 1));
+		row.appendChild(tag('th', '', '', timeStr));
+		renderChunksIntoRow(row, chunked);
+		table.appendChild(row);
 	
 	});
 

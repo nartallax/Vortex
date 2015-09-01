@@ -500,7 +500,7 @@ shred.define({
 					return containerTD;
 				}, 
 				getLessonContainer = function(_lesson, current){
-				var result = tag('div', 'overflow:hidden;position:absolute;'),
+				var result = tag('div', 'overflow:hidden'),
 					firstLine = tag('div', 'cursor:pointer;text-decoration:underline;overflow:visible;white-space:nowrap;text-align:left;margin:5px 0px 0px 5px'), 
 					secondLine = tag('div', 'overflow:hidden;white-space:nowrap;text-align:left;margin:5px 0px 5px 5px'),
 					rent = db.data.room[_lesson.room] || {building:undefined, name:''},
@@ -572,7 +572,8 @@ shred.define({
 				if(height < 30) return setTimeout(resizeListener, 50);
 				if(!table.parentNode) removeListener('resize', resizeListener, window);
 				var w = window.innerWidth - 30;
-				container.style.width = w + 'px', container.style.left = '-' + (w/2) + 'px';
+				table.style.maxWidth = table.style.width = table.style.minWidth = container.style.width = w + 'px';
+				container.style.left = '-' + (w/2) + 'px';
 				outerBlock.style.height = container.offsetHeight + 'px';
 			}
 			addListener('resize', resizeListener, window);
