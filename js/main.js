@@ -1034,8 +1034,8 @@ var renderLessonGrid = function(data, getTDforLessons){
 	var colWidth = (95 / (days.size() * 2)) + '%';
 	
 	table.appendChild(tr = tag('tr'));
-	tr.appendChild(tag('th', null, null, 'Пара'));
-	tr.appendChild(tag('th', null, null, 'Время'));
+	tr.appendChild(tag('th', 'width:1%', null, 'Пара'));
+	tr.appendChild(tag('th', 'width:1%', null, 'Время'));
 	days.each(function(d, num){ tr.appendChild(tag('th', '', 'lesson-grid-table-day-cell', d, {colspan:2})) });
 	
 	table.appendChild(tr = tag('tr'));
@@ -1044,8 +1044,8 @@ var renderLessonGrid = function(data, getTDforLessons){
 	days.each(function(){ 
 		var odddiv = tag('div','position:absolute;top:25%;width:100%', '', 'нечет'),
 			evendiv = tag('div','position:absolute;top:25%;width:100%', '', 'чет'),
-			oddrow = tag('th', 'position:relative', 'lesson-grid-table-day-cell'),
-			evenrow = tag('th', 'position:relative', 'lesson-grid-table-day-cell');
+			oddrow = tag('th', 'position:relative;width:1%', 'lesson-grid-table-day-cell'),
+			evenrow = tag('th', 'position:relative;width:1%', 'lesson-grid-table-day-cell');
 		oddrow.appendChild(odddiv);
 		evenrow.appendChild(evendiv);
 		tr.appendChild(evenrow);
