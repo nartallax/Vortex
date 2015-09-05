@@ -885,6 +885,22 @@ var change = {
 	}
 };
 
+var showLoadingBlocker = function(){
+		var blocker = el('loading-blocker');
+		if(!blocker){
+			blocker = tag('div', 'text-align:center', 'arial screenlocker', {'data-lock':'0', id:'loading-blocker'});
+			blocker.appendChild(tag('div', 'background:#000;opacity:0.85;position:absolute;top:0px;bottom:0px;right:0px;left:0px'));
+			blocker.appendChild(tag('div','position:absolute;bottom:60%;width:100%;color:#ddd;font-size:45px', '', 'Загрузка...'));
+			blocker.appendChild(tag('div','position:absolute;top:42.5%;width:100%;color:#aaa;font-size:25px', '', 'Данные, необходимые для работы системы, загружаются с сервера. Подождите, пожалуйста.'));
+			document.body.appendChild(blocker);
+		}
+		blocker.setAttribute('data-lock', parseInt(blocker.getAttribute('data-lock')) + 1);
+	}, hideLoadingBlocker = function(){
+		var blocker = el('loading-blocker');
+		if(!blocker) return;
+		blocker.setAttribute('data-lock', max(parseInt(blocker.getAttribute('data-lock')) - 1, 0));
+	}
+
 conjure.defaultPreprocessor = function(data){
 	if(['no_such_function', // считается, что эти коды ошибок нет смысла передавать дальше
 		'malformed_input',  // другие коды ошибок могут нести какую-либо дополнительную информацию
@@ -909,11 +925,13 @@ conjure.defaultPreprocessor = function(data){
 	} else this.readyNext(data);
 }
 conjure.defaultOnFail = function(apiName, data){
+	
 	popup.alert(
 		'Сервер не отвечает, синхронизация невозможна. Попробуйте повторить через некоторое время; если ошибка повторяется, сообщите разработчику, что функция ' + apiName + ' сломалась.',
 		'Сервер недоступен',
 		undefined,
 		{height:275, width:450});
+	hideLoadingBlocker();
 }
 conjure.listen('start', function(){ shreds.synchroIndicator.show() });
 conjure.listen('end', function(){ shreds.synchroIndicator.hide() });
@@ -1181,10 +1199,14 @@ var startApp = function(){
 	tooltip.setRoot(document.body.children[0]);
 	movableNode.setRoot(document.body.children[0]);
 	
+	showLoadingBlocker();
 	conjure('getWeekShift').then(function(r){
+		hideLoadingBlocker();
 		db.misc.weekShift.value = r.status === 'ok'? r.data.value: 0;
 		db.misc.weekShift.fire('dataUpdated');
 	});
+	
+	showLoadingBlocker();
 	conjure('tryResumeSession', function(r){ 
 		if(r.status !== 'ok' || !r.data.logged){
 			db.setRole('free');
@@ -1195,5 +1217,15 @@ var startApp = function(){
 				db.setRole('lector');
 			}
 		}
+		
+		showLoadingBlocker();
+		db.ents.cohort.fetch().then(hideLoadingBlocker);
+		
+		showLoadingBlocker();
+		db.ents.schedule.fetch().then(hideLoadingBlocker);
+		
+		
+		hideLoadingBlocker();
 	});
+	
 }
