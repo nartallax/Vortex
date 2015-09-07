@@ -106,9 +106,20 @@ shred.define({
 			var node = el('schedule_display_value_input');
 			var items = {};
 			({
-				'cohort': db.data.cohort.map(cohort.toString),
-				'lector': db.data.lector.map(lector.toString),
 				'room': db.data.room.map(room.toString),
+				'lector': db.data.lector.map(lector.toString),
+				'cohort': db.data.cohort.spawn(function(res, val, key){
+					var str = cohort.toString(val), arr;
+					if(str.match(/\s*\d+\s*\(.\d+\)/)){
+						arr = str
+							.replace(/[\(\)]/g, ' ')
+							.replace(/\s+/g, ' ')
+							.replace(/(^\s+|\s+$)/g, '')
+							.split(' ');
+						res[key] = arr;
+					} else res[key] = str;
+					return res;
+				}, {}),
 				'subject': db.data.subject.map(subject.toString)
 			}).each(function(data, prefix){ 
 				data.each(function(item, key){

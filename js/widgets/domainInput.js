@@ -45,7 +45,8 @@ widget.list.domainInput = (function(){
 		} else {
 			var count = 0;
 			for(var i in values){
-				opt = tag("option", null, null, values[i], {value:i});
+				i = values[i];
+				opt = tag("option", null, null, i.text, {value:i.key});
 				opt.onmouseover = onOptionMouseOver;
 				opt.onmousedown = onOptionMouseDown;
 				if(count++ === 0) opt.setAttribute("selected", "selected");
@@ -107,13 +108,17 @@ widget.list.domainInput = (function(){
 		fireEvent(createEvent('change'), this);
 	}
 	var getSelectedOption = function(){ return this._dropdown.options[this._dropdown.selectedIndex]; }
-	
+		
 	var getRelatedEntries = function(text, matchingMode){
-		var result = {};
+		var result = {}, data = this._data.spawn(function(res, v, k){
+			if(Array.isArray(v)) v.each(function(v){ res.push({text:v, key:k}) });
+			else res.push({text:v, key:k});
+			return res;
+		}, []);
 		text = text.toLowerCase();
 		switch(matchingMode){
-			case 'starts-with':	return this._data.fl(function(e){return e.toLowerCase().indexOf(text) === 0});
-			case 'contains': 	return this._data.fl(function(e){return e.toLowerCase().indexOf(text) >= 0});
+			case 'starts-with':	return data.fl(function(e){ return e.text.toLowerCase().indexOf(text) === 0});
+			case 'contains': 	return data.fl(function(e){return e.text.toLowerCase().indexOf(text) >= 0});
 			default: throw 'Unknown matching mode: "' + matchingMode + '".';
 		}
 	}
