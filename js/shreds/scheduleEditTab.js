@@ -154,7 +154,8 @@ shred.define({
 			}).registerDataExtractFunction('buttons', function(node){ 
 				return {}; 
 			});
-			
+		
+		shreds.scheduleEditTab.lastUsedFilter = undefined;
 		shreds.scheduleEditTab.table.listen('editFinish', function(arg){
 			var newData = arg.data.newData,
 				oldData = arg.data.oldData;
@@ -206,6 +207,7 @@ shred.define({
 					deletedLessons.map(function(l){ return l.id }).toArr()
 				);
 				shreds.scheduleEditTab.table.updateRow(newData, arg.data.key);
+				shreds.scheduleEditTab['filterBy' + shreds.scheduleEditTab.lastUsedFilter]();
 			});
 			
 			
@@ -256,6 +258,7 @@ shred.define({
 				});
 		},
 		filterByCohort: function(){
+			shreds.scheduleEditTab.lastUsedFilter = 'Cohort';
 			var cohort = parseInt(el('schedule_edit_cohort_filter').value()),
 				lessons = db.data.schedule[parseInt(el('schedule_edit_target_schedule').value)].lessons.fl(function(l){
 					for(var i in l.cohorts)
@@ -267,12 +270,14 @@ shred.define({
 			this.table.data(this.lectorCheckboxFilter(lesson.glue(lessons)));
 		},
 		filterByLector: function(){
+			shreds.scheduleEditTab.lastUsedFilter = 'Lector';
 			var lector = parseInt(el('schedule_edit_lector_filter').value),
 				lessons = db.data.schedule[parseInt(el('schedule_edit_target_schedule').value)].lessons.flfield('lector', lector);
 				
 			this.table.data(this.lectorCheckboxFilter(lesson.glue(lessons)));
 		},
 		filterByRoom: function(){
+			shreds.scheduleEditTab.lastUsedFilter = 'Room';
 			var room = parseInt(el('schedule_edit_room_filter').value()),
 				lessons = db.data.schedule[parseInt(el('schedule_edit_target_schedule').value)].lessons.flfield('room', room);
 				
@@ -280,12 +285,14 @@ shred.define({
 			
 		},
 		filterBySubject: function(){
+			shreds.scheduleEditTab.lastUsedFilter = 'Subject';
 			var subject = parseInt(el('schedule_edit_subject_filter').value()),
 				lessons = db.data.schedule[parseInt(el('schedule_edit_target_schedule').value)].lessons.flfield('subject', subject);
 				
 			this.table.data(this.lectorCheckboxFilter(lesson.glue(lessons)));
 		},
 		filterBySlot: function(){
+			shreds.scheduleEditTab.lastUsedFilter = 'Slot';
 			var flags = this.selectedSlots.toReverseAssoc(true),
 				lessons = db.data.schedule[parseInt(el('schedule_edit_target_schedule').value)].lessons.fl(function(l){ return flags[l.slot] })
 			
