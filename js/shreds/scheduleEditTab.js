@@ -160,7 +160,7 @@ shred.define({
 				oldData = arg.data.oldData;
 				
 			newData.note = oldData.note;
-			oldData.each(function(v, k){ if(v === true && k.startsWith('is_')) newData[k] = true; })
+			//oldData.each(function(v, k){ if(v === true && k.startsWith('is_')) newData[k] = true; })
 				
 			newData.hashSortRecursive();
 			oldData.hashSortRecursive();
@@ -174,6 +174,7 @@ shred.define({
 				var newLesson = lessons[id].cloneDeep().populate(newData.cloneDeep());
 				delete newLesson.slots;
 				delete newLesson.ids;
+				newLesson.each(function(v, k){ if(v === true && k.startsWith('is_') && !newData[k]) delete newLesson[k] });
 				return newLesson;
 			});
 			updatedLessons = oldLessons.fl(function(l){ return newData.slots.hasVal(l.slot); });
