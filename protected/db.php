@@ -213,8 +213,16 @@
 	}
 	
 	// basic transformations
-	$noteToDBtrans = function($ent){ if(isset($ent['note'])) $ent['note'] = array('value' => $ent['note']); return $ent; };
-	$noteFromDBtrans = function($ent){ if(isset($ent['note'])) $ent['note'] = $ent['note']['value']; return $ent; };
+	$noteToDBtrans = function($ent){ 
+		if(isset($ent['note']) && is_string($ent['note'])) 
+			$ent['note'] = array('value' => $ent['note']); 
+		return $ent; 
+	};
+	$noteFromDBtrans = function($ent){ 
+		if(isset($ent['note']) && is_array($ent['note'])) 
+			$ent['note'] = $ent['note']['value']; 
+		return $ent; 
+	};
 	
 	// table descriptions
 	$note = new dbEntity('notes', array(
@@ -317,6 +325,7 @@
 	$lesson->registerSecondaryEntity($cohortOnLesson, 'id', 'lesson', false, 'cohorts');
 	$lesson->registerSecondaryEntity($note, 'note', 'id');
 	$lesson->registerTransform(false, $noteToDBtrans);
+	$lesson->registerTransform(true, $noteFromDBtrans);
 	$lesson->registerTransform(false, function($ent) {
 		global $typeLessonMap;
 		
@@ -326,7 +335,6 @@
 		$ent['type'] = $typeLessonMap[$key];
 		return $ent;
 	});
-	$lesson->registerTransform(true, $noteFromDBtrans);
 	$lesson->registerTransform(true, function($ent) { 
 		global $lessonTypeMap;
 		

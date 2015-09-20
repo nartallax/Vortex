@@ -75,6 +75,7 @@ shred.define({
 			.registerDisplayFunction('cohort', function(row){ return tag('div', null, null, cohort.onLesson.toString(row.cohorts)) })
 			.registerDisplayFunction('subject', function(row){ return tag('div', null, null, subject.toString(row.subject)) })
 			.registerDisplayFunction('slot', function(row){ return tag('div', null, null, slot.toString(row.slot || row.slots)) })
+			.registerDisplayFunction('comment', function(row){ return tag('div', 'white-space:pre', null, (row.notes || []).uniq().join('\n')) })
 			.registerDisplayFunction('buttons', function(row){ 
 				var editButton = tag('input', {type:'button', value:'Изменить'}),
 					deleteButton = tag('input', {type:'button', value:'Удалить'}),
@@ -117,6 +118,8 @@ shred.define({
 				var result = tag('input', {type:'button', value: 'Выбрать время', 'data-slots':JSON.stringify(data.slots || [])});
 				result.onclick = onEditSlotsClick;
 				return result;
+			}).registerEditFunction('comment', function(data){
+				return tag('textarea', 'height:95%', null, (data.notes || []).uniq().join('\n'));;
 			}).registerEditFunction('buttons', function(data){
 				var revert = tag('input', {type:'button', value:'Отменить'}),
 					apply = tag('input', {type:'button', value: 'Применить'}),
@@ -151,6 +154,8 @@ shred.define({
 				return {subject: parseInt(val) };
 			}).registerDataExtractFunction('slot', function(node){
 				return {slots: JSON.parse(node.getAttribute('data-slots')) };
+			}).registerDataExtractFunction('comment', function(node){
+				return {notes: node.value.split('\n').fl(bool).uniq() };
 			}).registerDataExtractFunction('buttons', function(node){ 
 				return {}; 
 			});
@@ -160,7 +165,7 @@ shred.define({
 			var newData = arg.data.newData,
 				oldData = arg.data.oldData;
 				
-			newData.note = oldData.note;
+			//newData.note = oldData.note;
 			//oldData.each(function(v, k){ if(v === true && k.startsWith('is_')) newData[k] = true; })
 				
 			newData.hashSortRecursive();
@@ -178,6 +183,12 @@ shred.define({
 				newLesson.each(function(v, k){ if(v === true && k.startsWith('is_') && !newData[k]) delete newLesson[k] });
 				return newLesson;
 			});
+			
+			oldLessons.each(function(l){ 
+				l.note = l.notes? l.notes.uniq().join('\n'): l.note; 
+				delete l.notes;
+			});
+			
 			updatedLessons = oldLessons.fl(function(l){ return newData.slots.hasVal(l.slot); });
 			deletedLessons = oldLessons.fl(function(l){ return !newData.slots.hasVal(l.slot); });
 			createdLessons = newData.slots.fl(function(s){ return updatedLessons.flfield('slot', s).isEmpty(); }).map(function(s){
@@ -185,10 +196,14 @@ shred.define({
 				delete newLesson.slots;
 				delete newLesson.ids;
 				newLesson.slot = s;
+				newLesson.note = newLesson.notes.uniq().fl(bool).join('\n');
+				delete newLesson.notes;
 				if(!newLesson.spawn(function(r, v, k){ return r || (v === true && k.startsWith('is_')) }, false))
 					newLesson.is_lec = true;
 				return newLesson;
 			});
+			
+			clog(createdLessons);
 			
 			var ndata = newData.cloneFacile(),
 				odata = oldData.cloneFacile();
@@ -201,6 +216,8 @@ shred.define({
 				deleted: deletedLessons,
 				created: createdLessons
 			};
+			
+			clog(targetSchedule.alteredLessons);
 			
 			db.ents.schedule.update(targetSchedule).then(function(){
 				newData.ids = createdLessons.map(function(l){ return l.id }).toArr().concat(
@@ -365,6 +382,7 @@ shred.define({
 '		<div data-col-name="cohort">У кого</div>' + 
 '		<div data-col-name="subject">Что</div>' + 
 '		<div data-col-name="slot">Когда</div>' + 
+'		<div data-col-name="comment">Комментарий</div>' + 
 '		<div data-col-name="buttons"></div>' + 
 '	</div>' + 
 '	<div style="margin-top:20px;text-align:right">' + 
