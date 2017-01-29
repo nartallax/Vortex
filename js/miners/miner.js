@@ -60,7 +60,7 @@ var miner = (function(){
 			while(++i < days.length){ // iterate over days
 				var day = days[i];
 			
-				var dayName = getVal(day.match(/<th>.+?<span>(.*?)<\/span>.*?<\/th>/), 1, '??').toLowerCase();
+				var dayName = getVal(day.match(/<th[^>]*>.+?<span>(.*?)<\/span>.*?<\/th>/), 1, '??').toLowerCase();
 				
 				// верстальщик, кажется, дятел и забыл открывающий тег tr в одном месте. ничего, идем от tbody
 				var lessons = day.match(/<(?:tr|tbody).*?<\/tr>/g);
