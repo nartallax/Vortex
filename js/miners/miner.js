@@ -14,27 +14,11 @@ var miner = (function(){
 		например, очевидным результатом данной функции будет набор urlов, с которых можно собрать данные 
 		если callback вызван без параметров - значит, функция потерпела неудачу */
 	var getShardsDescription = function(callback){
-		conjure('proxy', {url:'https://isu.ifmo.ru/pls/apex/f?p=2005:4'}, function(resp){
+		conjure('proxy', {url:'http://www.ifmo.ru/ru/schedule/'}, function(resp){
 			if(resp.status != 'ok' || !resp.data.body)
 				return callback();
 				
-			clog(resp.data.body);
-				
-			var raw_links = resp.data.body/*.replace(/[\n\r]+\d+000[\n\r]+/g, '').replace(/[\n\r]+[\da-f]{4,}[\n\r]+/g, '')*/.match(/<a[^>]*href="[^"]*SCH_SEARCH[^"]*"[^>]*>[^<]*<\/a>/g);
-			var owned_groups = {};
-			var raw_link, i = -1, group, result = [];
-			while(raw_link = raw_links[++i]){
-				group = raw_link.match(/>.*?</);
-				if(!group || group.length < 1 || group[0].length < 3) continue; // no name in link, pass
-				group = group[0].substr(1, group[0].length - 2);
-				if(owned_groups[group]) continue; // already have this group, pass
-				owned_groups[group] = true;
-				group = raw_link.match(/href[^"]+"([^"]+)/);
-				if(!group || group.length < 2) continue; // no link, pass
-				group = parseHtmlEntities(group[1]);
-				result.push(group);
-			}
-			callback(result);
+			callback(resp.data.body.match(/[^"]*\/schedule\/0\/[^"]*.htm/g));
 		});
 	}
 	
@@ -56,61 +40,89 @@ var miner = (function(){
 		т.е. не должна полагаться на то, что до нее были или после нее будут какие-то запросы или что-то вроде того */
 	var lootShards = function(description, callback){
 	
-		conjure('proxy', {url:'http://isu.ifmo.ru/pls/apex/' + description}, function(resp){
+		conjure('proxy', {url:'http://www.ifmo.ru' + description}, function(resp){
 			if(resp.status != 'ok' || !resp.data.body || resp.data.status != 200) return callback();
 			
-			result = [];
-			var body = resp.data.body/*.replace(/[\n\r]+\d+000[\n\r]+/g, '').replace(/[\n\r]+[\da-f]{4,}[\n\r]+/g, '')*/.replace(/[\n\r]/g, ''); // needed to make regexp matching easier
+			var result = [];
 			
-			cohort = getVal(body.match(/i_r_head.*?([^<>]*)<\/div>/), 1, 'Неопознанная группа');
-			if(cohort != 'Неопознанная группа')
-				cohort = getVal(cohort.match(/\S+$/), 0, 'Неопознанная группа');
+			var cohort = getVal(resp.data.body.match(/<h\d+[^>]+schedule-title[^>]+>\S+\s+\S+\s+(.*?)<\/h\d+>/), 1, 'Неопознанная группа');
 			
-			body = body.match(/report_p_schedule_table.*?<\/table>/);
-			if(!body || body.length < 1) return callback(); // fail, no timetable
-			var days = body[0].match(/<h4>.*?<\/h4>.*?(?=<h4>|$)/g), day, i = -1; // break by days
+			var days = resp.data.body.replace(/[\n\r\s]+/g, ' ').match(/<table [^>]*\d+day[^>]+>.*?<\/table>/gm);
 			
+			if(!days){
+				clog("Failed to find day descriptions at " + description);
+				return callback([]);
+			}
+			
+			clog(description);
+			
+			var i = -1;
 			while(++i < days.length){ // iterate over days
-				day = days[i];
+				var day = days[i];
+			
+				var dayName = getVal(day.match(/<th>.+?<span>(.*?)<\/span>.*?<\/th>/), 1, '??').toLowerCase();
 				
-				var dayName = getVal(day.match(/<h4[^>]*>([^><\s]*).*?<\/h4>/), 1, 'Неопознанный день');// receiving day name
-				
-				var lessons = day.match(/<tr.*?<\/tr>/g);
+				// верстальщик, кажется, дятел и забыл открывающий тег tr в одном месте. ничего, идем от tbody
+				var lessons = day.match(/<(?:tr|tbody).*?<\/tr>/g);
 				if(!lessons) continue;
 				
-				var lastTimeFrom = '0:0', lastTimeTo = '0:0', lastOddity = '';
-				
-				var lesson, j = -1;
+				var j = -1;
 				while(++j < lessons.length){ // iterate over lessons
-					lesson = lessons[j];
+					var lesson = lessons[j];
 					
-					var fields = lesson.match(/<td.*?<\/td>/g); 
-					if(!fields || fields.length < 5) continue; // check for empty/not full row
+					var timeField = (lesson.match(/<td[^>]+time[^>]+>.*?<\/td>/g) || [])[0],
+						placeField = (lesson.match(/<td[^>]+room[^>]+>.*?<\/td>/g) || [])[0],
+						whatField = (lesson.match(/<td[^>]+lesson[^>]+>.*?<\/td>/g) || [])[0];
 					
-					var tmp = fields[0].match(/>([^>]*?)<\/span>/g); // time
-					if(tmp && tmp.length >= 2){
-						lastTimeFrom = tmp[0].match(/([^\<\>]+)/g)[0];
-						lastTimeTo = tmp[1].match(/([^\<\>]+)/g)[0];
+					if(!timeField || !placeField || !whatField){
+						clog('Skipping because of empty field(s) at ' + lesson);
+						continue;
 					}
 					
-					lastOddity = getVal(fields[1].match(/>([^><\s]*)\s?[^><]*?<\/td>/), 1, 'оба'); // if not supplied, assuming both odd and even
+					var times = (timeField.match(/<span[^>]*>.*?<\/span>/) || [''])[0].match(/[\d:]+/g) || ['', ''],
+						startTime = times[0],
+						endTime = times[1],
+						
+						oddity = (timeField.match(/<dt[^>]*>(.*?)<\/dt>/) || [''])[1] || 'оба';
+						
+					if(oddity.toLowerCase().match(/неч[её]т/)) oddity = 'нечет';
+					else if(oddity.toLowerCase().match(/ч[её]т/)) oddity = 'чет';
 					
-					//var building = getVal(fields[2].match(/>([^>]*?)<\/div>/), 1, 'Неопознанное строение');// room and building
-					var building = getVal(fields[2].match(/>([^>]*?)<\/div>/), 1, '');// room and building
-					//var room = getVal(fields[2].match(/>([^>]*?)<div/), 1, 'Неопознанная аудитория');
-					var room = getVal(fields[2].match(/>([^>]*?)<div/), 1, '');
+					var room = (placeField.match(/<dd[^>]*>(.*?)<\/dd>/) || [''])[1],
+						building = (placeField.match(/<span[^>]*>(.*?)<\/span>/) || [''])[1];
 					
-					//var subject = getVal(fields[3].match(/>([^>]*?)<div/), 1, 'Неопознанный предмет'); // subject
-					var subject = getVal(fields[3].match(/>([^>]*?)<div/), 1, ''); // subject
-					var subject_note = getVal(fields[3].match(/>([^><]*?)<\/div>/), 1, 'етц');
-					//var subject_type = getVal(tmp.match(/^(\S+)/), 1, 'етц'); // subject type
+					var what = (whatField.match(/<dd[^>]*>(.*?)<\/dd>/) || ['', ''])[1],
+						whatName = (what.match(/^[^\(\):]+/) || [''])[0],
+						whatType = (what.match(/\(([^\(\)]*?)\)[^\(\)]*?(?::|$)/) || ['', 'етц'])[1].toLowerCase(),
+						whatNote = (what.match(/:(.*?)$/) || ['', ''])[1],
+						who = (whatField.match(/<dt[^>]*>(?:<.*>)?([^<>]+)(?:<\/.*>)?<\/dt>/) || ['', ''])[1];
 					
-					tmp = fields[4].match(/href="[^"]*?(\d+)"[^>]*>([^<]*)/); // lector
-					var lector_id = getVal(tmp, 1, "000000");
-					//var lector = getVal(tmp, 2, "Фамилия Имя Отчество");
-					var lector = getVal(tmp, 2, "");
+					// проверка, что все собралось нормально
+					// пустые строки - это нормально
+					// а вот undefined-ы - нет, например
+					var allResultFields = [
+						startTime, endTime, oddity,
+						room, building, 
+						whatName, whatType, whatNote, who
+					];
+					var haveBadField = false;
+					allResultFields.forEach(function(x){ haveBadField = haveBadField || (typeof(x) !== 'string') });
+					if(haveBadField){
+						clog('One of fields at lesson have wrong value. Lesson will not be outputted as result.');
+						clog(allResultFields);
+						continue;
+					}
 					
-					result.push({room:room, lector:lector_id + ' ' + lector, building:building, subject: subject_note.replace('|','') + '|' + subject, slot:dayName + ' ' + lastOddity + ' ' + lastTimeFrom + ' ====> ' + lastTimeTo, cohort:cohort});
+					
+					result.push({
+						room: room.toLowerCase().replace(/ауд\S+/, '').replace(/\s+/, ''), 
+						lector: who, 
+						building: building, 
+						subject: whatNote.replace('|','').replace(/^\s+/, '') + '|' + whatName.replace(/\s+$/, '') + '|' + whatType, 
+						slot:dayName + ' ' + oddity + ' ' + startTime + ' ====> ' + endTime, 
+						cohort:cohort
+					});
+					//result.push({room:room, lector:lector_id + ' ' + lector, building:building, subject: subject_note.replace('|','') + '|' + subject, slot:dayName + ' ' + lastOddity + ' ' + lastTimeFrom + ' ====> ' + lastTimeTo, cohort:cohort});
 				}
 			}
 			
@@ -139,13 +151,13 @@ var miner = (function(){
 		(прим.: все остальные поля нужны для автодобавления сущностей в базу)
 		*/
 	var parseShard = function(shard){
+		
+		var lectorNameParts = shard.lector.replace(/(^\s+|\s+$)/g, '').split(/\s+/);
 		var lector = {
-			looting_info: getVal(shard.lector.match(/\d{3,}/), 0, '000000'),
-			//surname: getVal(shard.lector.match(/\d+\s*(\S+)/), 1, 'Фамилия'),
-			surname: getVal(shard.lector.match(/\d+\s*(\S+)/), 1, ''),
-			//name: getVal(shard.lector.match(/\d+\s*\S+\s*([А-Яа-яёЁ]+)/), 1, 'Имя'),
-			name: getVal(shard.lector.match(/\d+\s*\S+\s*([А-Яа-яёЁ]+)/), 1, ''),
-			patronym: getVal(shard.lector.match(/\d+\s*\S+\s*[А-Яа-яёЁ]+[^А-Яа-яёЁ]*([А-Яа-яёЁ]+)/), 1, '')
+			looting_info: lectorNameParts.join(' ').toLowerCase(),
+			surname: lectorNameParts[0] || '',
+			name: lectorNameParts[1] || '',
+			patronym: lectorNameParts[2] || ''
 		};
 		
 		var cohorts = [{
@@ -164,7 +176,8 @@ var miner = (function(){
 		};
 		
 		
-		var raw_type = getVal(shard.subject.match(/[^|]*/), 0, 'етц');
+		var subjectParts = shard.subject.split('|');
+		var raw_type = subjectParts[2] || 'етц';
 		
 		var subject = {
 			type: 	raw_type.match('[Лл][Аа][Бб]')?'is_lab':
@@ -172,9 +185,8 @@ var miner = (function(){
 					raw_type.match('[Пп][Рр][Аа]?[Кк]')?'is_prk':
 					raw_type.match('[Сс]([Рр][Сс]|[Аа][Мм])')?'is_srs':
 					'is_etc',
-			//name: getVal(shard.subject.match(/[^|]*\|(.*)/), 1, 'Неопознанный предмет'),
-			name: getVal(shard.subject.match(/[^|]*\|(.*)/), 1, ''),
-			looting_info: getVal(shard.subject.match(/[^|]*\|(.*)/), 1, 'Неопознанный предмет')
+			name: subjectParts[1] || '',
+			looting_info: (subjectParts[1] || '').toLowerCase().replace(/(^\s+|\s+$)/g, '')
 		}
 		
 		var dow = getVal(shard.slot.match(/\S+/), 0, '???'), startTime = 0;

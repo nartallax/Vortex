@@ -76,7 +76,7 @@ shred.define({
 			if(!el('looting_session_number').value) 
 				el('looting_session_number').value = looting.getCurrentSessionId();
 			var id_raw = el('looting_session_number').value;
-			if(parseInt(id_raw) + '' !== id_raw) return appendLogMessage('Неправильно введен номер сессии.', 'red');
+			if(parseInt(id_raw) + '' !== id_raw) return shreds.lootingAndSqlTab.appendLogMessage('Неправильно введен номер сессии.', 'red');
 			looting.continueSelected(parseInt(id_raw));
 		},
 		tryExtractBuildings: function(){
@@ -99,7 +99,7 @@ shred.define({
 					
 				popup.confirm('Извлечено ' + extracted.length + ' зданий. Из них ' + newData.length + ' новых. Вы хотите добавить их в базу данных?', function(){
 					conjure('createBuildings', newData).then(checkOkStatus).then(function(r){
-						appendLogMessage('Данные загружены в базу.', 'green');
+						shreds.lootingAndSqlTab.appendLogMessage('Данные загружены в базу.', 'green');
 						db.data.building = r.data.reindex('id');
 						db.ents.building.fire('dataUpdated');
 					});
@@ -128,7 +128,7 @@ shred.define({
 					
 				popup.confirm('Извлечено ' + extracted.length + ' аудиторий. Из них ' + newData.length + ' новых. Вы хотите добавить их в базу данных?', function(){
 					conjure('createRooms', newData).then(checkOkStatus).then(function(r){
-						appendLogMessage('Данные загружены в базу.', 'green');
+						shreds.lootingAndSqlTab.appendLogMessage('Данные загружены в базу.', 'green');
 						db.data.room = r.data.reindex('id');
 						db.ents.room.fire('dataUpdated');
 					});
@@ -155,7 +155,7 @@ shred.define({
 				
 				popup.confirm('Извлечено ' + extracted.length + ' преподавателей. Из них ' + newData.length + ' новых. Вы хотите добавить их в базу данных?', function(){
 					conjure('createLectors', newData).then(checkOkStatus).then(function(r){
-						appendLogMessage('Данные загружены в базу.', 'green');
+						shreds.lootingAndSqlTab.appendLogMessage('Данные загружены в базу.', 'green');
 						db.data.lector = r.data.reindex('id');
 						db.ents.lector.fire('dataUpdated');
 					});
@@ -185,7 +185,7 @@ shred.define({
 				
 				popup.confirm('Извлечено ' + extracted.length + ' групп. Из них ' + newData.length + ' новых. Вы хотите добавить их в базу данных?', function(){
 					conjure('createCohorts', newData).then(checkOkStatus).then(function(r){
-						appendLogMessage('Данные загружены в базу.', 'green');
+						shreds.lootingAndSqlTab.appendLogMessage('Данные загружены в базу.', 'green');
 						db.data.cohort = r.data.reindex('id');
 						db.ents.cohort.fire('dataUpdated');
 					});
@@ -213,7 +213,7 @@ shred.define({
 				
 				popup.confirm('Извлечено ' + extracted.length + ' предметов. Из них ' + newData.length + ' новых. Вы хотите добавить их в базу данных?', function(){
 					conjure('createSubjects', newData).then(checkOkStatus).then(function(r){
-						appendLogMessage('Данные загружены в базу.', 'green');
+						shreds.lootingAndSqlTab.appendLogMessage('Данные загружены в базу.', 'green');
 						db.data.subject = r.data.reindex('id');
 						db.ents.subject.fire('dataUpdated');
 					});
